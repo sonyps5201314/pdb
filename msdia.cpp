@@ -1024,9 +1024,10 @@ HRESULT pdb_session_t::open_session(const pdbargs_t &pdbargs)
 
     used_fname = path;
 
-    // Setup symsrv callback to show wait box for pdb downloading
-    symsrv_cb_t symsrv_cb;
-    symsrv_cb.init();
+	//注释掉下面这种粗暴的使用symsrv的方式，不兼容最新版本的symsrv.dll了，或导致下载了的文件无法重命名为正确的名称
+    //// Setup symsrv callback to show wait box for pdb downloading
+    //symsrv_cb_t symsrv_cb;
+    //symsrv_cb.init();
 
     // Try searching for PDB information from the debug directory in a
     // PE file. Either the input file is read directly or the contents
@@ -1034,8 +1035,8 @@ HRESULT pdb_session_t::open_session(const pdbargs_t &pdbargs)
     hr = load_input_path(pdbargs, path.c_str());
     pdb_loaded = (hr == S_OK);
 
-    // Hide wait box for pdb downloading if needed
-    symsrv_cb.term();
+    //// Hide wait box for pdb downloading if needed
+    //symsrv_cb.term();
   }
 
   // Failed? Then nothing else to try, quit
