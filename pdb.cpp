@@ -3,10 +3,31 @@
 //      26-02-2008 Complete rewrite to use DIA API
 
 #ifdef __NT__
+#define USE_STANDARD_FILE_FUNCTIONS
+#define _CRT_SECURE_NO_WARNINGS
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 #  include <objidl.h>
 #  define PDB_PLUGIN
+
+//JKSDK
+#define __DO_NOT_USE_JKSDK_OUTPUTDEBUGSTRING__
+//#define __DO_NOT_USE_JKSDK_TRACE__
+//#define __DO_NOT_USE_JKSDK_ASSERT__
+#define __DO_NOT_USE_COM__
+//#define __DO_NOT_USE_ATL_CSTRING__
+#define __DO_NOT_USE_JKSDK_CDLG__
+#define __DO_NOT_USE_JKSDK_AUTOLOCK__
+#define __DO_NOT_USE_JKSDK_SHOWCALLSTACKTRACK_SOURCEFILEPATHMAPPINGS__
+#include "F:\MyCppProjects\JKSDK\Lib\JKSDK.H"
+
+//JKSDK
+#include "F:\MyCppProjects\JKSDK\Lib\JKSDK.CPP"
+#ifdef _M_IX86
+#pragma comment(lib,"F:\\MyCppProjects\\JKSDK\\Lib\\JKSDK_ASM_LIB.lib")
+#elif defined(_M_AMD64)
+#pragma comment(lib,"F:\\MyCppProjects\\JKSDK\\Lib\\x64\\JKSDK_ASM_LIB.lib")
+#endif
 #else
 #  define ENABLE_REMOTEPDB
 #endif
@@ -797,7 +818,6 @@ static HRESULT remote_handler(pdb_ctx_t &pv, const pdbargs_t &args)
 /*====================================================================
                       IDA PRO INTERFACE START HERE
 ====================================================================*/
-
 //-------------------------------------------------------------------------
 static const cfgopt_t g_opts[] =
 {
@@ -806,6 +826,8 @@ static const cfgopt_t g_opts[] =
   CFGOPT_QS("_NT_SYMBOL_PATH",    pdb_ctx_t, full_sympath,       true),
   CFGOPT_QS("PDB_REMOTE_SERVER",  pdb_ctx_t, pdb_remote_server,  true),
   CFGOPT_QS("PDB_REMOTE_PASSWD",  pdb_ctx_t, pdb_remote_passwd,  true),
+  CFGOPT_R("PDB_PROVIDER",		  pdb_ctx_t, pdb_provider, PDB_PROVIDER_MSDIA, PDB_PROVIDER_PDBIDA),
+  CFGOPT_QS("PDB_MSDIA_FALLBACK", pdb_ctx_t, opt_fallback, true),
 };
 
 //----------------------------------------------------------------------
@@ -845,6 +867,10 @@ void pdb_ctx_t::init_sympaths()
   // user specified symbol path?
   full_sympath.qclear();
   read_config_file2("pdb", g_opts, qnumber(g_opts), nullptr, nullptr, 0, this);
+  if (pdb_provider != PDB_PROVIDER_MSDIA)
+  {
+	  msg("PDB: This modified version of PDB plug-in currently only supports MSDIA interface\n");
+  }
 
   qstring env_sympath;
   if ( qgetenv("_NT_SYMBOL_PATH", &env_sympath) )

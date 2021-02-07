@@ -22,6 +22,10 @@ struct pdb_session_t
   }
   ~pdb_session_t();
 
+  HRESULT check_and_load_pdb(
+	  LPCOLESTR pdb_path,
+	  const pdb_signature_t &pdb_sign,
+	  bool load_anyway);
   HRESULT open_session(const pdbargs_t &pdbargs);
   void close();
   const char *get_used_fname() const { return used_fname.begin(); }

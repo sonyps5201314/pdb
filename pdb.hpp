@@ -95,7 +95,8 @@ struct pdb_ctx_t : public plugmod_t
   int  pdb_remote_port_64 = -1;
   qstring pdb_remote_server;
   qstring pdb_remote_passwd;
-#define PDB_PROVIDER_MSDIA  1
+#define PDB_PROVIDER_MSDIA  1   // use MSDIA local/remote provider
+#define PDB_PROVIDER_PDBIDA 2   // use PDBIDA provider
   uint pdb_provider = PDB_PROVIDER_MSDIA;
 
   // Plugin options
@@ -103,7 +104,7 @@ struct pdb_ctx_t : public plugmod_t
   // -1 don't specified
   // 0  set PDB_FALLBACK to false
   // 1  set PDB_FALLBACK to true
-  int opt_fallback = -1;
+  bool opt_fallback = -1;
 
   using namelist_t = std::map<ea_t, qstring>;
   namelist_t namelist;

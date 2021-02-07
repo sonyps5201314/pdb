@@ -15,6 +15,7 @@
 
 #include "../../ldr/pe/pe.h"
 #include "pdblocal.cpp"
+#include "dia2_internal.h"
 
 //lint -esym(843, g_diadlls, g_pdb_errors, PathIsUNC) could be declared as const
 
@@ -22,7 +23,7 @@ int pdb_session_t::session_count = 0;
 bool pdb_session_t::co_initialized = false;
 
 typedef BOOL (__stdcall *PathIsUNC_t)(LPCTSTR pszPath);
-static PathIsUNC_t PathIsUNC = NULL;
+//static PathIsUNC_t PathIsUNC = NULL;
 
 static bool check_for_odd_paths(const char *fname);
 
@@ -400,9 +401,9 @@ class DECLSPEC_UUID("31495af6-0897-4f1e-8dac-1447f10174a1") DiaSource71;
 static const GUID *const g_d90 = &__uuidof(DiaSource90);  // msdia90.dll
 static const GUID *const g_d80 = &__uuidof(DiaSource80);  // msdia80.dll
 static const GUID *const g_d71 = &__uuidof(DiaSource71);  // msdia71.dll
-static const GUID *const g_msdiav[] = { g_d90, g_d80, g_d71 };
-static const int         g_diaver[] = { 900,   800,   710 };
-static const char *const g_diadlls[] = { "msdia90.dll", "msdia80.dll", "msdia71.dll" };
+static const GUID *const g_msdiav[] = { &__uuidof(DiaSource), g_d90, g_d80, g_d71 };
+static const int         g_diaver[] = { 14000,   900,   800,   710 };
+static const char *const g_diadlls[] = { "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
 
 //----------------------------------------------------------------------
 HRESULT __stdcall CoCreateInstanceNoReg(
@@ -682,8 +683,7 @@ static qstring print_guid(GUID *guid)
 }
 
 //----------------------------------------------------------------------------
-static HRESULT check_and_load_pdb(
-        IDiaDataSource *pSource,
+HRESULT pdb_session_t::check_and_load_pdb(
         LPCOLESTR pdb_path,
         const pdb_signature_t &pdb_sign,
         bool load_anyway)
@@ -721,6 +721,96 @@ static HRESULT check_and_load_pdb(
     hr = pSource->loadDataFromPdb(pdb_path);
     deb(IDA_DEBUG_DEBUGGER, "PDB: loadDataFromPdb(\"%S\"): %s\n", pdb_path, pdberr(hr));
   }
+
+  if (hr == S_OK)
+  {
+	  IDiaSession* pDiaSession = NULL;
+	  hr = pSource->openSession(&pDiaSession);
+
+	  ATLASSERT(hr == S_OK);
+	  if (hr == S_OK)
+	  {
+		  IDiaSession10* pIDiaSession10 = NULL;
+		  hr = pDiaSession->QueryInterface(IID_IDiaSession10, (void **)&pIDiaSession10);
+		  pDiaSession->Release();
+		  pDiaSession = NULL;
+
+		  //ATLASSERT(hr == S_OK);
+		  if (hr == S_OK)
+		  {
+			  BOOL fMinimalDbgInfo = FALSE;
+			  hr = pIDiaSession10->isMiniPDB(&fMinimalDbgInfo);
+			  pIDiaSession10->Release();
+			  pIDiaSession10 = NULL;
+
+			  ATLASSERT(hr == S_OK);
+			  if (hr == S_OK)
+			  {
+				  if (fMinimalDbgInfo)
+				  {
+					  bool convert = ask_yn(ASKBTN_NO,
+						  "HIDECANCEL\nICON WARNING\nAUTOHIDE NONE\n"
+						  "PDB is a mini pdb file(build with /DEBUG:FASTLINK).\n"
+						  "Do you want to convert it to a full pdb file(build with /DEBUG:FULL)?") == ASKBTN_YES;
+					  if (convert)
+					  {
+						  CString strPdbPath((LPCTSTR)COLE2T(pdb_path));
+						  CString strFileExtName(GetFileExtName((LPCTSTR)strPdbPath));
+						  CString strPdbPath_Full;
+						  if (strFileExtName.GetLength())
+						  {
+							  strPdbPath_Full = strPdbPath.Left(strPdbPath.GetLength() - strFileExtName.GetLength()) + _T("_Full") + strFileExtName;
+						  }
+						  else
+						  {
+							  strPdbPath_Full = strPdbPath + _T("_Full");
+						  }
+						  LPCTSTR pszExeFile = _T("C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Tools\\MSVC\\14.28.29333\\bin\\Hostx86\\x86\\mspdbcmf.exe");
+						  if (!IsFile(pszExeFile))
+						  {
+							  info("ICON WARNING\nAUTOHIDE NONE\n"
+								  "mspdbcmf.exe is not existed!");
+						  }
+						  else
+						  {
+							  CString strCmdLine;
+							  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), pszExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
+							  DWORD dwExitCode = 0;
+							  if (ShellEx(strCmdLine.GetBuffer(), SW_NORMAL, ShellWaitToExit, &dwExitCode))
+							  {
+								  //暂时无代码
+							  }
+							  strCmdLine.ReleaseBuffer();
+
+							  if (IsFile(strPdbPath_Full))
+							  {
+								  pSource->Release();
+								  pSource = NULL;
+
+								  int dia_version;
+								  hr = create_dia_source(&dia_version);
+								  if (hr == S_OK)
+								  {
+									  BOOL bResult = MoveFileEx(strPdbPath_Full, strPdbPath, MOVEFILE_REPLACE_EXISTING);
+									  ATLASSERT(bResult);
+									  if (bResult)
+									  {
+										  hr = check_and_load_pdb(pdb_path, pdb_sign, load_anyway);
+									  }
+								  }
+							  }
+							  else
+							  {
+								  info("ICON WARNING\nAUTOHIDE NONE\n"
+									  "try to convert to full pdb has failed!");
+							  }
+						  }
+					  }
+				  }
+			  }
+		  }
+	  }
+  }
   return hr;
 }
 
@@ -730,9 +820,10 @@ static bool check_for_odd_paths(const char *fname)
 {
   if ( PathIsUNC == NULL )
   {
-    HMODULE h = GetModuleHandle("shlwapi.dll");
-    if ( h != NULL )
-      PathIsUNC = (PathIsUNC_t)(void*)GetProcAddress(h, "PathIsUNCA");
+	  ATLASSERT(FALSE);
+    //HMODULE h = GetModuleHandle("shlwapi.dll");
+    //if ( h != NULL )
+    //  PathIsUNC = (PathIsUNC_t)(void*)GetProcAddress(h, "PathIsUNCA");
   }
   if ( fname[0] == '\\'
     || fname[0] == '/'
@@ -795,6 +886,8 @@ HRESULT pdb_session_t::load_data_for_exe(
     deb(IDA_DEBUG_DEBUGGER, "PDB: Trying loadDataForExe(\"%S\", \"%S\")%s\n", winput.c_str(), wspath.c_str(), buf.c_str());
 
     CCallback callback(this, msdia_reader, load_address);
+	//目前新版本中需要symsrv.dll才行
+	//https://github.com/MicrosoftDocs/visualstudio-docs/issues/5781
     hr = pSource->loadDataForExe(winput.c_str(), wspath.c_str(), (IDiaLoadCallback *)&callback);
 
     deb(IDA_DEBUG_DEBUGGER, "PDB: %s\n", pdberr(hr));
@@ -901,7 +994,7 @@ HRESULT pdb_session_t::open_session(const pdbargs_t &pdbargs)
     qwstring wpdb_path;
     utf8_utf16(&wpdb_path, pdb_path.c_str());
     bool force_load = (pdbargs.flags & (PDBFLG_ONLY_TYPES|PDBFLG_EFD)) != 0;
-    hr = check_and_load_pdb(pSource, wpdb_path.c_str(), pdbargs.pdb_sign, force_load);
+    hr = check_and_load_pdb(wpdb_path.c_str(), pdbargs.pdb_sign, force_load);
     if ( hr == E_PDB_INVALID_SIG || hr == E_PDB_INVALID_AGE ) // Mismatching PDB
       goto fail;
     pdb_loaded = (hr == S_OK);
