@@ -16,6 +16,7 @@
 #include "../../ldr/pe/pe.h"
 #include "pdblocal.cpp"
 #include "dia2_internal.h"
+#include "Program.h"
 
 //lint -esym(843, g_diadlls, g_pdb_errors, PathIsUNC) could be declared as const
 
@@ -403,7 +404,7 @@ static const GUID *const g_d80 = &__uuidof(DiaSource80);  // msdia80.dll
 static const GUID *const g_d71 = &__uuidof(DiaSource71);  // msdia71.dll
 static const GUID *const g_msdiav[] = { &__uuidof(DiaSource), g_d90, g_d80, g_d71 };
 static const int         g_diaver[] = { 14000,   900,   800,   710 };
-static const char *const g_diadlls[] = { "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
+static const char *const g_diadlls[] = { "msdia140.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
 
 //----------------------------------------------------------------------
 HRESULT __stdcall CoCreateInstanceNoReg(
@@ -681,8 +682,6 @@ static qstring print_guid(GUID *guid)
     guid_str = "{00000000-0000-0000-0000-000000000000}";
   return guid_str;
 }
-
-HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULONGLONG& ullVersion);
 
 CString MD5_FromData(const unsigned char * buf, unsigned int len)
 {
@@ -1198,6 +1197,19 @@ fail:
   return hr;
 }
 
+static std::string get_msdia140_dll_path()
+{
+	std::string strVsInstallationPath;
+	ULONGLONG ullVersion;
+	HRESULT hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
+	ATLASSERT(hr == S_OK);
+	if (hr == S_OK)
+	{
+		strVsInstallationPath += "\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
+	}
+	return strVsInstallationPath;
+}
+
 //----------------------------------------------------------------------
 HRESULT pdb_session_t::create_dia_source(int *dia_version)
 {
@@ -1226,13 +1238,25 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
     {
       // Search for this interface in DIA dlls
       char path[QMAXPATH];
-      if ( !search_path(path, sizeof(path), g_diadlls[i], false)
-        && (vc_shared.empty()
-         || SearchPathA(vc_shared.c_str(), g_diadlls[i], NULL,
-                        qnumber(path), path, NULL) == 0) )
-      {
-        continue;
-      }
+	  path[0] = 0;
+	  if (g_diaver[i] == 14000)
+	  {
+		  auto msdia140_dll_path = get_msdia140_dll_path();
+		  if (!msdia140_dll_path.empty())
+		  {
+			  qstrncpy(path, msdia140_dll_path.c_str(), qnumber(path));
+		  }
+	  }
+	  if (!path[0])
+	  {
+		  if (!search_path(path, sizeof(path), g_diadlls[i], false)
+			  && (vc_shared.empty()
+				  || SearchPathA(vc_shared.c_str(), g_diadlls[i], NULL,
+					  qnumber(path), path, NULL) == 0))
+		  {
+			  continue;
+		  }
+	  }
 
       for ( size_t j=0; j < qnumber(g_msdiav); j++ )
       {

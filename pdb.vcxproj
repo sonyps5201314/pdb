@@ -211,6 +211,7 @@
     <ClInclude Include="pdbaccess.hpp" />
     <ClInclude Include="pdblocal.hpp" />
     <ClInclude Include="pdbremote.hpp" />
+    <ClInclude Include="Program.h" />
     <ClInclude Include="sip.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="tilbuild.hpp" />

@@ -20,7 +20,8 @@ _COM_SMARTPTR_TYPEDEF(ISetupInstanceCatalog, __uuidof(ISetupInstanceCatalog));
 
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
-    _In_ ISetupHelper* pHelper
+	_In_ ISetupHelper* pHelper,
+	std::string& MaxVsInstanceVersion
 );
 
 //void PrintPackageReference(
@@ -35,14 +36,15 @@ BOOL FindVcInWorkloads(
     _In_ LPSAFEARRAY psaPackages
 );
 
-static std::vector<ISetupInstancePtr> SetupInstances;
-static std::string MaxVsInstanceVersion;
 HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULONGLONG& ullVersion)
 {
     try
     {
         CoInitializer init;
         ISetupConfigurationPtr query;
+
+		std::vector<ISetupInstancePtr> SetupInstances;
+		std::string MaxVsInstanceVersion;
 
         auto hr = query.CreateInstance(__uuidof(SetupConfiguration));
         if (REGDB_E_CLASSNOTREG == hr)
@@ -72,7 +74,7 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
         {
             // Wrap instance without AddRef'ing.
             ISetupInstancePtr instance(pInstances[0], false);
-            PrintInstance(instance, helper);
+            PrintInstance(instance, helper, MaxVsInstanceVersion);
 			SetupInstances.push_back(instance);
 
             hr = e->Next(1, pInstances, NULL);
@@ -93,8 +95,6 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
 			}
 			if (!_tcscmp(bstrVersion, MaxVsInstanceVersion.c_str()))
 			{
-				MaxVsInstanceVersion.clear();
-
 				if (FAILED(hr = helper->ParseVersion(bstrVersion, &ullVersion)))
 				{
 					throw win32_exception(hr, "failed to parse InstallationVersion");
@@ -128,7 +128,8 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
 
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
-    _In_ ISetupHelper* pHelper
+    _In_ ISetupHelper* pHelper,
+	std::string& MaxVsInstanceVersion
 )
 {
     HRESULT hr = S_OK;
