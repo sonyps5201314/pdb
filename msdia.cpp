@@ -813,8 +813,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  strExeFile.Append(strVsInstallationPath.c_str());
 								  CString strPath_Microsoft_VCToolsVersion_default_txt = strExeFile + _T("\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt");
 								  LARGE_INTEGER li = FileLen(strPath_Microsoft_VCToolsVersion_default_txt);
-								  ATLASSERT(li.HighPart == 0);
-								  size_t nFileSize = li.LowPart;
+								  size_t nFileSize = li.QuadPart;
 								  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPath_Microsoft_VCToolsVersion_default_txt, nFileSize);
 								  CString strVersion((LPCSTR)pcbFileBuffer, nFileSize);
 								  strVersion.Trim();
@@ -849,8 +848,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  if (bResult)
 								  {
 									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
-									  ATLASSERT(li.HighPart == 0);
-									  size_t nFileSize = li.LowPart;
+									  size_t nFileSize = li.QuadPart;
 									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
 									  md5Pdb_Old_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
 									  ReleaseFileContextBuffer(pcbFileBuffer);
@@ -867,8 +865,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  if (bUseVs2015MsPdbCmf)
 								  {
 									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
-									  ATLASSERT(li.HighPart == 0);
-									  size_t nFileSize = li.LowPart;
+									  size_t nFileSize = li.QuadPart;
 									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
 									  CString md5Pdb_New_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
 									  ReleaseFileContextBuffer(pcbFileBuffer);
