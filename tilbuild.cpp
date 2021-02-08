@@ -2349,14 +2349,22 @@ HRESULT til_builder_t::after_iterating(pdb_sym_t &)
 HRESULT til_builder_t::build(pdb_sym_t &global_sym)
 {
   HRESULT hr = before_iterating(global_sym);
-  if ( hr == S_OK )
-    hr = handle_types(global_sym);
+  if (hr == S_OK)
+  {
+	  if ((pdb_access->pdbargs.flags & PDBFLG_IS_MINIPDB) == 0)
+	  {
+		  hr = handle_types(global_sym);
+	  }
+  }
   if ( (pdb_access->pdbargs.flags & PDBFLG_ONLY_TYPES) == 0 )
   {
-    if ( hr == S_OK )
-      hr = handle_symbols(global_sym);
-    if ( hr == S_OK )
-      hr = handle_globals(global_sym);
+	  if ((pdb_access->pdbargs.flags & PDBFLG_IS_MINIPDB) == 0)
+	  {
+		  if (hr == S_OK)
+			  hr = handle_symbols(global_sym);
+		  if (hr == S_OK)
+			  hr = handle_globals(global_sym);
+	  }
     // handle_globals() will set the type and undecorated name for globals,
     // and handle_publics() will set the decorated name for public symbols.
     // We want both the type (from handle_globals()) and the decorated symbol

@@ -708,7 +708,8 @@ CString MD5_FromData(const unsigned char * buf, unsigned int len)
 HRESULT pdb_session_t::check_and_load_pdb(
         LPCOLESTR pdb_path,
         const pdb_signature_t &pdb_sign,
-        bool load_anyway)
+        bool load_anyway,
+		pdbargs_t &pdbargs)
 {
   HRESULT hr = E_FAIL;
   if ( !load_anyway )
@@ -744,6 +745,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
     deb(IDA_DEBUG_DEBUGGER, "PDB: loadDataFromPdb(\"%S\"): %s\n", pdb_path, pdberr(hr));
   }
 
+  pdbargs.flags &= ~PDBFLG_IS_MINIPDB;
   if (hr == S_OK)
   {
 	  IDiaSession* pDiaSession = NULL;
@@ -770,6 +772,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 			  {
 				  if (fMinimalDbgInfo)
 				  {
+					  pdbargs.flags |= PDBFLG_IS_MINIPDB;
 					  bool convert = ask_yn(ASKBTN_NO,
 						  "HIDECANCEL\nICON WARNING\nAUTOHIDE NONE\n"
 						  "PDB is a partial pdb file(build with /DEBUG:FASTLINK).\n"
@@ -894,7 +897,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 									  ATLASSERT(bResult);
 									  if (bResult)
 									  {
-										  hr = check_and_load_pdb(pdb_path, pdb_sign, load_anyway);
+										  hr = check_and_load_pdb(pdb_path, pdb_sign, load_anyway, pdbargs);
 									  }
 								  }
 							  }
@@ -1059,7 +1062,7 @@ HRESULT pdb_session_t::load_input_path(
 }
 
 //----------------------------------------------------------------------------
-HRESULT pdb_session_t::open_session(const pdbargs_t &pdbargs)
+HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 {
   // Already open?
   if ( pdb_access != NULL )
@@ -1093,7 +1096,7 @@ HRESULT pdb_session_t::open_session(const pdbargs_t &pdbargs)
     qwstring wpdb_path;
     utf8_utf16(&wpdb_path, pdb_path.c_str());
     bool force_load = (pdbargs.flags & (PDBFLG_ONLY_TYPES|PDBFLG_EFD)) != 0;
-    hr = check_and_load_pdb(wpdb_path.c_str(), pdbargs.pdb_sign, force_load);
+    hr = check_and_load_pdb(wpdb_path.c_str(), pdbargs.pdb_sign, force_load, pdbargs);
     if ( hr == E_PDB_INVALID_SIG || hr == E_PDB_INVALID_AGE ) // Mismatching PDB
       goto fail;
     pdb_loaded = (hr == S_OK);
@@ -1356,7 +1359,7 @@ void pdb_session_ref_t::close()
 }
 
 //----------------------------------------------------------------------
-HRESULT pdb_session_ref_t::open_session(const pdbargs_t &pdbargs)
+HRESULT pdb_session_ref_t::open_session(pdbargs_t &pdbargs)
 {
   if ( opened() )
     return S_OK;

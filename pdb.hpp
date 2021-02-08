@@ -57,6 +57,7 @@ struct pdbargs_t
 #define PDBFLG_ONLY_TYPES  0x02
 #define PDBFLG_EFD         0x04
 #define PDBFLG_COFF_FILE   0x08
+#define PDBFLG_IS_MINIPDB  0x10
 
   pdbargs_t(void)
     : loaded_base(BADADDR),
