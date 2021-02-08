@@ -23,6 +23,8 @@
     <ClInclude Include="dia2_internal.h">
       <Filter>pdb</Filter>
     </ClInclude>
+    <ClInclude Include="Helpers.h" />
+    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.cpp">
@@ -40,11 +42,15 @@
     <ClCompile Include="sip.cpp" />
     <ClCompile Include="tilbuild.cpp" />
     <ClCompile Include="msdia.cpp" />
+    <ClCompile Include="Helpers.cpp" />
+    <ClCompile Include="Program.cpp" />
+    <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="makefile">
       <Filter>pdb</Filter>
     </None>
     <None Include="pdb.cfg" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

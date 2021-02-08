@@ -10,24 +10,8 @@
 #  include <objidl.h>
 #  define PDB_PLUGIN
 
-//JKSDK
-#define __DO_NOT_USE_JKSDK_OUTPUTDEBUGSTRING__
-//#define __DO_NOT_USE_JKSDK_TRACE__
-//#define __DO_NOT_USE_JKSDK_ASSERT__
-#define __DO_NOT_USE_COM__
-//#define __DO_NOT_USE_ATL_CSTRING__
-#define __DO_NOT_USE_JKSDK_CDLG__
-#define __DO_NOT_USE_JKSDK_AUTOLOCK__
-#define __DO_NOT_USE_JKSDK_SHOWCALLSTACKTRACK_SOURCEFILEPATHMAPPINGS__
-#include "F:\MyCppProjects\JKSDK\Lib\JKSDK.H"
+#include "stdafx.h"
 
-//JKSDK
-#include "F:\MyCppProjects\JKSDK\Lib\JKSDK.CPP"
-#ifdef _M_IX86
-#pragma comment(lib,"F:\\MyCppProjects\\JKSDK\\Lib\\JKSDK_ASM_LIB.lib")
-#elif defined(_M_AMD64)
-#pragma comment(lib,"F:\\MyCppProjects\\JKSDK\\Lib\\x64\\JKSDK_ASM_LIB.lib")
-#endif
 #else
 #  define ENABLE_REMOTEPDB
 #endif

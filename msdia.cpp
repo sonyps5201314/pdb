@@ -682,6 +682,7 @@ static qstring print_guid(GUID *guid)
   return guid_str;
 }
 
+HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULONGLONG& ullVersion);
 //----------------------------------------------------------------------------
 HRESULT pdb_session_t::check_and_load_pdb(
         LPCOLESTR pdb_path,
@@ -765,8 +766,35 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  {
 							  strPdbPath_Full = strPdbPath + _T("_Full");
 						  }
-						  LPCTSTR pszExeFile = _T("C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Tools\\MSVC\\14.28.29333\\bin\\Hostx86\\x86\\mspdbcmf.exe");
-						  if (!IsFile(pszExeFile))
+
+						  CString strExeFile;
+
+						  std::string strVsInstallationPath;
+						  ULONGLONG ullVersion;
+						  hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
+						  ATLASSERT(hr == S_OK);
+						  if (hr == S_OK)
+						  {
+							  ULARGE_INTEGER uli;
+							  uli.QuadPart = ullVersion;
+							  WORD wVsMainVersion = HIWORD(uli.HighPart);
+							  ATLASSERT(wVsMainVersion > 14);
+							  if (wVsMainVersion > 14)
+							  {
+								  strExeFile.Append(strVsInstallationPath.c_str());
+								  CString strPath_Microsoft_VCToolsVersion_default_txt = strExeFile + _T("\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt");
+								  LARGE_INTEGER li = FileLen(strPath_Microsoft_VCToolsVersion_default_txt);
+								  ATLASSERT(li.HighPart == 0);
+								  size_t nFileSize = li.LowPart;
+								  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPath_Microsoft_VCToolsVersion_default_txt, nFileSize);
+								  CString strVersion((LPCSTR)pcbFileBuffer, nFileSize);
+								  strVersion.Trim();
+								  ReleaseFileContextBuffer(pcbFileBuffer);
+								  strExeFile.AppendFormat(_T("\\VC\\Tools\\MSVC\\%s\\bin\\Hostx86\\x86\\mspdbcmf.exe"), (LPCTSTR)strVersion);
+							  }
+						  }
+
+						  if (!IsFile(strExeFile))
 						  {
 							  info("ICON WARNING\nAUTOHIDE NONE\n"
 								  "mspdbcmf.exe is not existed!");
@@ -774,7 +802,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  else
 						  {
 							  CString strCmdLine;
-							  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), pszExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
+							  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
 							  DWORD dwExitCode = 0;
 							  if (ShellEx(strCmdLine.GetBuffer(), SW_NORMAL, ShellWaitToExit, &dwExitCode))
 							  {
