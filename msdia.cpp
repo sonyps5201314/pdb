@@ -1245,9 +1245,13 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 	  path[0] = 0;
 	  if (g_diaver[i] == 14000)
 	  {
-		  auto msdia140_dll_path = get_msdia140_dll_path();
+		  std::string msdia140_dll_path = get_msdia140_dll_path();
 		  if (!msdia140_dll_path.empty())
 		  {
+			  char dir_path[QMAXPATH];
+			  GetDirPath(msdia140_dll_path.c_str(), dir_path, qnumber(dir_path));
+			  SetDllDirectory(dir_path);
+
 			  qstrncpy(path, msdia140_dll_path.c_str(), qnumber(path));
 		  }
 	  }
@@ -1259,6 +1263,21 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 					  qnumber(path), path, NULL) == 0))
 		  {
 			  continue;
+		  }
+	  }
+
+	  if (g_diaver[i] == 14000)
+	  {
+		  HMODULE hmod = LoadLibraryEx(_T("symsrv.dll"), NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_WITH_ALTERED_SEARCH_PATH);
+		  if (!hmod)
+		  {
+			   info("ICON WARNING\nAUTOHIDE NONE\n"
+				   "The symsrv.dll file cannot be found, so it may not be possible to download symbols online!");
+		  }
+		  else
+		  {
+			  FreeLibrary(hmod);
+			  hmod = NULL;
 		  }
 	  }
 
