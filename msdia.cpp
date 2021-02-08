@@ -683,6 +683,28 @@ static qstring print_guid(GUID *guid)
 }
 
 HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULONGLONG& ullVersion);
+
+CString MD5_FromData(const unsigned char * buf, unsigned int len)
+{
+	unsigned char digest[16];
+	MD5Context ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx, buf, len);
+	MD5Final(digest,&ctx);
+
+	CHAR szResult[64];
+	szResult[0] = 0;
+	int nResultLen = _countof(szResult);
+	BOOL bResult = AtlHexEncode(digest, _countof(digest), szResult, &nResultLen);
+	ATLASSERT(bResult);
+	if (bResult)
+	{
+		szResult[nResultLen] = 0;
+	}
+	CString strResult(szResult);
+	strResult.MakeLower();
+	return strResult;
+}
 //----------------------------------------------------------------------------
 HRESULT pdb_session_t::check_and_load_pdb(
         LPCOLESTR pdb_path,
@@ -751,7 +773,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 				  {
 					  bool convert = ask_yn(ASKBTN_NO,
 						  "HIDECANCEL\nICON WARNING\nAUTOHIDE NONE\n"
-						  "PDB is a mini pdb file(build with /DEBUG:FASTLINK).\n"
+						  "PDB is a partial pdb file(build with /DEBUG:FASTLINK).\n"
 						  "Do you want to convert it to a full pdb file(build with /DEBUG:FULL)?") == ASKBTN_YES;
 					  if (convert)
 					  {
@@ -766,6 +788,10 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  {
 							  strPdbPath_Full = strPdbPath + _T("_Full");
 						  }
+						  if (IsFile(strPdbPath_Full))
+						  {
+							  Kill(strPdbPath_Full);
+						  }
 
 						  CString strExeFile;
 
@@ -773,6 +799,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  ULONGLONG ullVersion;
 						  hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
 						  ATLASSERT(hr == S_OK);
+						  BOOL bUseVs2015MsPdbCmf = FALSE;
 						  if (hr == S_OK)
 						  {
 							  ULARGE_INTEGER uli;
@@ -793,6 +820,15 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  strExeFile.AppendFormat(_T("\\VC\\Tools\\MSVC\\%s\\bin\\Hostx86\\x86\\mspdbcmf.exe"), (LPCTSTR)strVersion);
 							  }
 						  }
+						  else
+						  {
+							  CString strVs140ComnTools = Environ(_T("VS140COMNTOOLS"));
+							  if (!strVs140ComnTools.IsEmpty())
+							  {
+								  strExeFile = strVs140ComnTools + "..\\..\\VC\\bin\\mspdbcmf.exe";
+								  bUseVs2015MsPdbCmf = TRUE;
+							  }
+						  }
 
 						  if (!IsFile(strExeFile))
 						  {
@@ -801,16 +837,52 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  }
 						  else
 						  {
+							  BOOL bConverted = FALSE;
+							  CString md5Pdb_Old_for_Vs2015;
 							  CString strCmdLine;
-							  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
-							  DWORD dwExitCode = 0;
-							  if (ShellEx(strCmdLine.GetBuffer(), SW_NORMAL, ShellWaitToExit, &dwExitCode))
+							  if (bUseVs2015MsPdbCmf)
 							  {
-								  //ÔÝÊ±ÎÞ´úÂë
+								  BOOL bResult = CopyFile(strPdbPath, strPdbPath_Full, FALSE);
+								  ATLASSERT(bResult);
+								  if (bResult)
+								  {
+									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
+									  ATLASSERT(li.HighPart == 0);
+									  size_t nFileSize = li.LowPart;
+									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
+									  md5Pdb_Old_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
+									  ReleaseFileContextBuffer(pcbFileBuffer);
+									  strCmdLine.Format(_T("%s /STATUS %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full);
+								  }
+							  }
+							  else
+							  {
+								  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
+							  }
+							  DWORD dwExitCode = 0;
+							  if (!strCmdLine.IsEmpty() && ShellEx(strCmdLine.GetBuffer(), SW_NORMAL, ShellWaitToExit, &dwExitCode))
+							  {
+								  if (bUseVs2015MsPdbCmf)
+								  {
+									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
+									  ATLASSERT(li.HighPart == 0);
+									  size_t nFileSize = li.LowPart;
+									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
+									  CString md5Pdb_New_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
+									  ReleaseFileContextBuffer(pcbFileBuffer);
+									  if (md5Pdb_New_for_Vs2015 != md5Pdb_Old_for_Vs2015)
+									  {
+										  bConverted = TRUE;
+									  }
+								  }
+								  else
+								  {
+									  bConverted = IsFile(strPdbPath_Full);
+								  }
 							  }
 							  strCmdLine.ReleaseBuffer();
 
-							  if (IsFile(strPdbPath_Full))
+							  if (bConverted)
 							  {
 								  pSource->Release();
 								  pSource = NULL;

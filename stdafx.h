@@ -34,3 +34,5 @@
 #define __DO_NOT_USE_JKSDK_AUTOLOCK__
 #define __DO_NOT_USE_JKSDK_SHOWCALLSTACKTRACK_SOURCEFILEPATHMAPPINGS__
 #include "F:\MyCppProjects\JKSDK\Lib\JKSDK.H"
+
+#include <atlenc.h>
