@@ -876,6 +876,10 @@ HRESULT pdb_session_t::check_and_load_pdb(
 									  {
 										  bConverted = TRUE;
 									  }
+									  else
+									  {
+										  Kill(strPdbPath_Full);
+									  }
 								  }
 								  else
 								  {
