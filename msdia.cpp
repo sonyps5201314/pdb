@@ -895,10 +895,17 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  if (hr == S_OK)
 								  {
 									  BOOL bResult = MoveFileEx(strPdbPath_Full, strPdbPath, MOVEFILE_REPLACE_EXISTING);
-									  ATLASSERT(bResult);
 									  if (bResult)
 									  {
 										  hr = check_and_load_pdb(pdb_path, pdb_sign, load_anyway, pdbargs);
+									  }
+									  else
+									  {
+										  CStringW strError(Error());
+										  ATLASSERT(bResult);
+										  msg("PDB: MoveFileEx(\"%s\", \"%s\", ...) failed, %s\n", (LPCTSTR)CW2T((CStringW)strPdbPath_Full, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath, CP_UTF8), (LPCTSTR)CW2T(strError, CP_UTF8));
+										  CT2OLE pdb_path_full(strPdbPath_Full);
+										  hr = check_and_load_pdb(pdb_path_full, pdb_sign, load_anyway, pdbargs);
 									  }
 								  }
 							  }
