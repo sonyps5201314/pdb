@@ -833,8 +833,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 
 						  if (!IsFile(strExeFile))
 						  {
-							  info("ICON WARNING\nAUTOHIDE NONE\n"
-								  "mspdbcmf.exe is not existed!");
+							  warning("\"mspdbcmf.exe\" is not existed!");
 						  }
 						  else
 						  {
@@ -902,8 +901,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 									  else
 									  {
 										  CStringW strError(Error());
-										  ATLASSERT(bResult);
-										  msg("PDB: MoveFileEx(\"%s\", \"%s\", ...) failed, %s\n", (LPCTSTR)CW2T((CStringW)strPdbPath_Full, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath, CP_UTF8), (LPCTSTR)CW2T(strError, CP_UTF8));
+										  warning("Failed to move file, %s\n(from \"%s\" to \"%s\")", (LPCTSTR)CW2T(strError, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath_Full, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath, CP_UTF8));
 										  CT2OLE pdb_path_full(strPdbPath_Full);
 										  hr = check_and_load_pdb(pdb_path_full, pdb_sign, load_anyway, pdbargs);
 									  }
@@ -911,8 +909,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 							  }
 							  else
 							  {
-								  info("ICON WARNING\nAUTOHIDE NONE\n"
-									  "try to convert to full pdb has failed!");
+								  warning("Try to convert to full pdb has failed!");
 							  }
 						  }
 					  }
@@ -1278,8 +1275,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 		  HMODULE hmod = LoadLibraryEx(_T("symsrv.dll"), NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_WITH_ALTERED_SEARCH_PATH);
 		  if (!hmod)
 		  {
-			   info("ICON WARNING\nAUTOHIDE NONE\n"
-				   "The symsrv.dll file cannot be found, so it may not be possible to download symbols online!");
+			   warning("The \"symsrv.dll\" file cannot be found, so it may not be possible to download symbols online!");
 		  }
 		  else
 		  {
