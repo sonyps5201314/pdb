@@ -23,8 +23,10 @@
 int pdb_session_t::session_count = 0;
 bool pdb_session_t::co_initialized = false;
 
+#ifndef _INC_SHLWAPI
 typedef BOOL (__stdcall *PathIsUNC_t)(LPCTSTR pszPath);
-//static PathIsUNC_t PathIsUNC = NULL;
+static PathIsUNC_t PathIsUNC = NULL;
+#endif
 
 static bool check_for_odd_paths(const char *fname);
 
@@ -683,27 +685,6 @@ static qstring print_guid(GUID *guid)
   return guid_str;
 }
 
-CString MD5_FromData(const unsigned char * buf, unsigned int len)
-{
-	unsigned char digest[16];
-	MD5Context ctx;
-	MD5Init(&ctx);
-	MD5Update(&ctx, buf, len);
-	MD5Final(digest,&ctx);
-
-	CHAR szResult[64];
-	szResult[0] = 0;
-	int nResultLen = _countof(szResult);
-	BOOL bResult = AtlHexEncode(digest, _countof(digest), szResult, &nResultLen);
-	ATLASSERT(bResult);
-	if (bResult)
-	{
-		szResult[nResultLen] = 0;
-	}
-	CString strResult(szResult);
-	strResult.MakeLower();
-	return strResult;
-}
 //----------------------------------------------------------------------------
 HRESULT pdb_session_t::check_and_load_pdb(
         LPCOLESTR pdb_path,
@@ -751,7 +732,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 	  IDiaSession* pDiaSession = NULL;
 	  hr = pSource->openSession(&pDiaSession);
 
-	  ATLASSERT(hr == S_OK);
+	  ASSERT(hr == S_OK);
 	  if (hr == S_OK)
 	  {
 		  IDiaSession10* pIDiaSession10 = NULL;
@@ -759,7 +740,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 		  pDiaSession->Release();
 		  pDiaSession = NULL;
 
-		  //ATLASSERT(hr == S_OK);
+		  //ASSERT(hr == S_OK);
 		  if (hr == S_OK)
 		  {
 			  BOOL fMinimalDbgInfo = FALSE;
@@ -767,7 +748,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 			  pIDiaSession10->Release();
 			  pIDiaSession10 = NULL;
 
-			  ATLASSERT(hr == S_OK);
+			  ASSERT(hr == S_OK);
 			  if (hr == S_OK)
 			  {
 				  if (fMinimalDbgInfo)
@@ -779,110 +760,120 @@ HRESULT pdb_session_t::check_and_load_pdb(
 						  "Do you want to convert it to a full pdb file(build with /DEBUG:FULL)?") == ASKBTN_YES;
 					  if (convert)
 					  {
-						  CString strPdbPath((LPCTSTR)COLE2T(pdb_path));
-						  CString strFileExtName(GetFileExtName((LPCTSTR)strPdbPath));
-						  CString strPdbPath_Full;
-						  if (strFileExtName.GetLength())
+						  qstring strPdbPath(utf16_utf8(pdb_path));
+						  qstring strFileExtName(get_file_ext(strPdbPath.c_str()));
+						  qstring strPdbPath_Full;
+						  if (strFileExtName.length())
 						  {
-							  strPdbPath_Full = strPdbPath.Left(strPdbPath.GetLength() - strFileExtName.GetLength()) + _T("_Full") + strFileExtName;
+							  strFileExtName.insert(0, '.');
+							  strPdbPath_Full = strPdbPath.substr(0, strPdbPath.length() - strFileExtName.length()) + "_Full" + strFileExtName;
 						  }
 						  else
 						  {
-							  strPdbPath_Full = strPdbPath + _T("_Full");
+							  strPdbPath_Full = strPdbPath + "_Full";
 						  }
-						  if (IsFile(strPdbPath_Full))
+						  if (qfileexist(strPdbPath_Full.c_str()))
 						  {
-							  Kill(strPdbPath_Full);
+							  qunlink(strPdbPath_Full.c_str());
 						  }
 
-						  CString strExeFile;
+						  qstring strExeFile;
 
-						  std::string strVsInstallationPath;
+						  qwstring strVsInstallationPathW;
 						  ULONGLONG ullVersion;
-						  hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
-						  ATLASSERT(hr == S_OK);
+						  hr = GetMaxVersionVsInstallationPath(strVsInstallationPathW, ullVersion);
+						  ASSERT(hr == S_OK);
 						  BOOL bUseVs2015MsPdbCmf = FALSE;
 						  if (hr == S_OK)
 						  {
+							  qstring strVsInstallationPath(utf16_utf8(strVsInstallationPathW.c_str()));
+
 							  ULARGE_INTEGER uli;
 							  uli.QuadPart = ullVersion;
 							  WORD wVsMainVersion = HIWORD(uli.HighPart);
-							  ATLASSERT(wVsMainVersion > 14);
+							  ASSERT(wVsMainVersion > 14);
 							  if (wVsMainVersion > 14)
 							  {
-								  strExeFile.Append(strVsInstallationPath.c_str());
-								  CString strPath_Microsoft_VCToolsVersion_default_txt = strExeFile + _T("\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt");
-								  LARGE_INTEGER li = FileLen(strPath_Microsoft_VCToolsVersion_default_txt);
-								  size_t nFileSize = li.QuadPart;
-								  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPath_Microsoft_VCToolsVersion_default_txt, nFileSize);
-								  CString strVersion((LPCSTR)pcbFileBuffer, nFileSize);
-								  strVersion.Trim();
-								  ReleaseFileContextBuffer(pcbFileBuffer);
-								  strExeFile.AppendFormat(_T("\\VC\\Tools\\MSVC\\%s\\bin\\Hostx86\\x86\\mspdbcmf.exe"), (LPCTSTR)strVersion);
+								  strExeFile.append(strVsInstallationPath.c_str());
+								  qstring qstrPath_Microsoft_VCToolsVersion_default_txt = strExeFile + "\\VC\\Auxiliary\\Build\\Microsoft.VCToolsVersion.default.txt";
+								  uint64 nFileSize = qfilesize_utf8(qstrPath_Microsoft_VCToolsVersion_default_txt.c_str());
+								  qstring strVersion = GetFileContext(qstrPath_Microsoft_VCToolsVersion_default_txt.c_str(), nFileSize);
+								  strVersion.rtrim('\n');
+								  strVersion.rtrim('\r');
+								  strExeFile.cat_sprnt("\\VC\\Tools\\MSVC\\%s\\bin\\Hostx86\\x86\\mspdbcmf.exe", strVersion.c_str());
 							  }
 						  }
 						  else
 						  {
-							  CString strVs140ComnTools = Environ(_T("VS140COMNTOOLS"));
-							  if (!strVs140ComnTools.IsEmpty())
+							  qstring strVs140ComnTools;
+							  qgetenv("VS140COMNTOOLS", &strVs140ComnTools);
+							  if (!strVs140ComnTools.empty())
 							  {
 								  strExeFile = strVs140ComnTools + "..\\..\\VC\\bin\\mspdbcmf.exe";
 								  bUseVs2015MsPdbCmf = TRUE;
 							  }
 						  }
 
-						  if (!IsFile(strExeFile))
+						  if (!qfileexist(strExeFile.c_str()))
 						  {
 							  warning("\"mspdbcmf.exe\" is not existed!");
 						  }
 						  else
 						  {
 							  BOOL bConverted = FALSE;
-							  CString md5Pdb_Old_for_Vs2015;
-							  CString strCmdLine;
+							  uchar md5Pdb_Old_for_Vs2015[16];
+							  qstring strArgs;
 							  if (bUseVs2015MsPdbCmf)
 							  {
-								  BOOL bResult = CopyFile(strPdbPath, strPdbPath_Full, FALSE);
-								  ATLASSERT(bResult);
-								  if (bResult)
+								  int result = qcopyfile(strPdbPath.c_str(), strPdbPath_Full.c_str());
+								  ASSERT(!result);
+								  if (!result)
 								  {
-									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
-									  size_t nFileSize = li.QuadPart;
-									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
-									  md5Pdb_Old_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
-									  ReleaseFileContextBuffer(pcbFileBuffer);
-									  strCmdLine.Format(_T("%s /STATUS %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full);
+									  uint64 nFileSize = qfilesize_utf8(strPdbPath_Full.c_str());
+									  qstring strFileContext = GetFileContext(strPdbPath_Full.c_str(), nFileSize);
+									  MD5_FromData((uchar*)strFileContext.c_str(), nFileSize, md5Pdb_Old_for_Vs2015);
+									  strArgs.sprnt("/STATUS %s", strPdbPath_Full.c_str());
 								  }
 							  }
 							  else
 							  {
-								  strCmdLine.Format(_T("%s /STATUS /OUT:%s %s"), (LPCTSTR)strExeFile, (LPCTSTR)strPdbPath_Full, (LPCTSTR)strPdbPath);
+								  strArgs.sprnt("/STATUS /OUT:%s %s", strPdbPath_Full.c_str(), strPdbPath.c_str());
 							  }
-							  DWORD dwExitCode = 0;
-							  if (!strCmdLine.IsEmpty() && ShellEx(strCmdLine.GetBuffer(), SW_NORMAL, ShellWaitToExit, &dwExitCode))
+							  if (!strArgs.empty())
 							  {
-								  if (bUseVs2015MsPdbCmf)
+								  launch_process_params_t lpp;
+								  lpp.flags = 0;
+								  lpp.path= strExeFile.c_str();
+								  lpp.args = strArgs.c_str();
+								  qstring errbuf;
+								  void * handle = launch_process(lpp, &errbuf);
+								  if (handle)
 								  {
-									  LARGE_INTEGER li = FileLen(strPdbPath_Full);
-									  size_t nFileSize = li.QuadPart;
-									  LPBYTE pcbFileBuffer = GetFileContextBuffer(strPdbPath_Full, nFileSize);
-									  CString md5Pdb_New_for_Vs2015 = MD5_FromData(pcbFileBuffer, nFileSize);
-									  ReleaseFileContextBuffer(pcbFileBuffer);
-									  if (md5Pdb_New_for_Vs2015 != md5Pdb_Old_for_Vs2015)
+									  int exit_code = 0;
+									  check_process_exit(handle, &exit_code);
+									  handle = NULL;
+
+									  if (bUseVs2015MsPdbCmf)
 									  {
-										  bConverted = TRUE;
+										  uint64 nFileSize = qfilesize_utf8(strPdbPath_Full.c_str());
+										  qstring strFileBuffer = GetFileContext(strPdbPath_Full.c_str(), nFileSize);
+										  uchar md5Pdb_New_for_Vs2015[16];
+										  MD5_FromData((uchar*)strFileBuffer.c_str(), nFileSize, md5Pdb_New_for_Vs2015);
+										  if (memcmp(md5Pdb_New_for_Vs2015, md5Pdb_Old_for_Vs2015, sizeof(md5Pdb_New_for_Vs2015)))
+										  {
+											  bConverted = TRUE;
+										  }
+										  else
+										  {
+											  qunlink(strPdbPath_Full.c_str());
+										  }
 									  }
 									  else
 									  {
-										  Kill(strPdbPath_Full);
+										  bConverted = qfileexist(strPdbPath_Full.c_str());
 									  }
 								  }
-								  else
-								  {
-									  bConverted = IsFile(strPdbPath_Full);
-								  }
 							  }
-							  strCmdLine.ReleaseBuffer();
 
 							  if (bConverted)
 							  {
@@ -893,17 +884,19 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  hr = create_dia_source(&dia_version);
 								  if (hr == S_OK)
 								  {
-									  BOOL bResult = MoveFileEx(strPdbPath_Full, strPdbPath, MOVEFILE_REPLACE_EXISTING);
-									  if (bResult)
+									  int result = qmove(strPdbPath_Full.c_str(), strPdbPath.c_str(), QMOVE_OVERWRITE);
+									  if (!result)
 									  {
 										  hr = check_and_load_pdb(pdb_path, pdb_sign, load_anyway, pdbargs);
 									  }
 									  else
 									  {
-										  CStringW strError(Error());
-										  warning("Failed to move file, %s\n(from \"%s\" to \"%s\")", (LPCTSTR)CW2T(strError, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath_Full, CP_UTF8), (LPCTSTR)CW2T((CStringW)strPdbPath, CP_UTF8));
-										  CT2OLE pdb_path_full(strPdbPath_Full);
-										  hr = check_and_load_pdb(pdb_path_full, pdb_sign, load_anyway, pdbargs);
+										  DWORD dwErrorCode = GetLastError();
+										  char* pszError(winerr(dwErrorCode));
+
+										  warning("Failed to move file, %s\n(from \"%s\" to \"%s\")", pszError, strPdbPath_Full.c_str(), strPdbPath.c_str());
+										  qwstring pdb_path_full(utf8_utf16(strPdbPath_Full.c_str()));
+										  hr = check_and_load_pdb(pdb_path_full.c_str(), pdb_sign, load_anyway, pdbargs);
 									  }
 								  }
 							  }
@@ -927,10 +920,13 @@ static bool check_for_odd_paths(const char *fname)
 {
   if ( PathIsUNC == NULL )
   {
-	  ATLASSERT(FALSE);
-    //HMODULE h = GetModuleHandle("shlwapi.dll");
-    //if ( h != NULL )
-    //  PathIsUNC = (PathIsUNC_t)(void*)GetProcAddress(h, "PathIsUNCA");
+#ifndef _INC_SHLWAPI
+    HMODULE h = GetModuleHandle("shlwapi.dll");
+    if ( h != NULL )
+      PathIsUNC = (PathIsUNC_t)(void*)GetProcAddress(h, "PathIsUNCA");
+#else
+	ASSERT(FALSE);
+#endif
   }
   if ( fname[0] == '\\'
     || fname[0] == '/'
@@ -1205,17 +1201,17 @@ fail:
   return hr;
 }
 
-static std::string get_msdia140_dll_path()
+static qstring get_msdia140_dll_path()
 {
-	std::string strVsInstallationPath;
+	qwstring strVsInstallationPath;
 	ULONGLONG ullVersion;
 	HRESULT hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
-	ATLASSERT(hr == S_OK);
+	ASSERT(hr == S_OK);
 	if (hr == S_OK)
 	{
-		strVsInstallationPath += "\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
+		strVsInstallationPath += L"\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
 	}
-	return strVsInstallationPath;
+	return utf16_acp(strVsInstallationPath.c_str());
 }
 
 //----------------------------------------------------------------------
@@ -1249,11 +1245,11 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 	  path[0] = 0;
 	  if (g_diaver[i] == 14000)
 	  {
-		  std::string msdia140_dll_path = get_msdia140_dll_path();
+		  qstring msdia140_dll_path = get_msdia140_dll_path();
 		  if (!msdia140_dll_path.empty())
 		  {
 			  char dir_path[QMAXPATH];
-			  GetDirPath(msdia140_dll_path.c_str(), dir_path, qnumber(dir_path));
+			  qdirname(dir_path, qnumber(dir_path), msdia140_dll_path.c_str());
 			  SetDllDirectory(dir_path);
 
 			  qstrncpy(path, msdia140_dll_path.c_str(), qnumber(path));
@@ -1272,7 +1268,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 
 	  if (g_diaver[i] == 14000)
 	  {
-		  HMODULE hmod = LoadLibraryEx(_T("symsrv.dll"), NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_WITH_ALTERED_SEARCH_PATH);
+		  HMODULE hmod = LoadLibraryEx("symsrv.dll", NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_WITH_ALTERED_SEARCH_PATH);
 		  if (!hmod)
 		  {
 			   warning("The \"symsrv.dll\" file cannot be found, so it may not be possible to download symbols online!");

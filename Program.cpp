@@ -21,7 +21,7 @@ _COM_SMARTPTR_TYPEDEF(ISetupInstanceCatalog, __uuidof(ISetupInstanceCatalog));
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
 	_In_ ISetupHelper* pHelper,
-	std::string& MaxVsInstanceVersion
+	qwstring& MaxVsInstanceVersion
 );
 
 //void PrintPackageReference(
@@ -36,7 +36,7 @@ BOOL FindVcInWorkloads(
     _In_ LPSAFEARRAY psaPackages
 );
 
-HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULONGLONG& ullVersion)
+HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLONG& ullVersion)
 {
     try
     {
@@ -44,7 +44,7 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
         ISetupConfigurationPtr query;
 
 		std::vector<ISetupInstancePtr> SetupInstances;
-		std::string MaxVsInstanceVersion;
+		qwstring MaxVsInstanceVersion;
 
         auto hr = query.CreateInstance(__uuidof(SetupConfiguration));
         if (REGDB_E_CLASSNOTREG == hr)
@@ -93,7 +93,7 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
 			{
 				throw win32_exception(hr, "failed to get InstallationVersion");
 			}
-			if (!_tcscmp(bstrVersion, MaxVsInstanceVersion.c_str()))
+			if (!wcscmp(bstrVersion, MaxVsInstanceVersion.c_str()))
 			{
 				if (FAILED(hr = helper->ParseVersion(bstrVersion, &ullVersion)))
 				{
@@ -129,7 +129,7 @@ HRESULT GetMaxVersionVsInstallationPath(std::string& strVsInstallationPath, ULON
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
     _In_ ISetupHelper* pHelper,
-	std::string& MaxVsInstanceVersion
+	qwstring& MaxVsInstanceVersion
 )
 {
     HRESULT hr = S_OK;

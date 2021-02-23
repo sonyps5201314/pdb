@@ -26,6 +26,7 @@
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Program.h" />
+    <ClInclude Include="misc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.cpp">
