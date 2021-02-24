@@ -654,6 +654,58 @@ public:
   symsrv_cb_t(void)
   {
     symsrv_hmod = LoadLibrary("symsrv.dll");
+	if (!symsrv_hmod)
+	{
+		warning("The \"symsrv.dll\" file cannot be found, so it may not be possible to download symbols online!");
+	}
+	else
+	{
+		TCHAR szVersionFile[MAX_PATH];
+		GetModuleFileName(symsrv_hmod, szVersionFile, _countof(szVersionFile));
+		ASSERT(szVersionFile[0]);
+
+		//https://stackoverflow.com/questions/940707/how-do-i-programmatically-get-the-version-of-a-dll-or-exe-file
+		DWORD  verHandle = 0;
+		UINT   size = 0;
+		LPBYTE lpBuffer = NULL;
+		DWORD  verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
+
+		if (verSize != NULL)
+		{
+			BYTE* verData = new BYTE[verSize];
+
+			if (GetFileVersionInfo(szVersionFile, verHandle, verSize, verData))
+			{
+				if (VerQueryValue(verData, _T("\\"), (LPVOID*)&lpBuffer, &size))
+				{
+					if (size)
+					{
+						VS_FIXEDFILEINFO* verInfo = (VS_FIXEDFILEINFO*)lpBuffer;
+						if (verInfo->dwSignature == 0xfeef04bd)
+						{
+
+							// Doesn't matter if you are on 32 bit or 64 bit,
+							// DWORD is always 32 bits, so first two revision numbers
+							// come from dwFileVersionMS, last two come from dwFileVersionLS
+							CStringW strVersion;
+							strVersion.Format(L"%d.%d.%d.%d",
+								(verInfo->dwFileVersionMS >> 16) & 0xffff,
+								(verInfo->dwFileVersionMS >> 0) & 0xffff,
+								(verInfo->dwFileVersionLS >> 16) & 0xffff,
+								(verInfo->dwFileVersionLS >> 0) & 0xffff
+							);
+							if (CompareFileVersion(strVersion, L"10.0.19596.1001") < 0)
+							{
+								warning("The version of the symsrv.dll file is lower than 10.0.19596.1001, so it cannot support immediate cancellation of the download operation!");
+							}
+						}
+					}
+				}
+			}
+			delete[] verData;
+			verData = NULL;
+		}
+	}
     wait_box_shown = false;
     get_option_data = NULL;
     set_options = NULL;
@@ -1298,20 +1350,6 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 					  qnumber(path), path, NULL) == 0))
 		  {
 			  continue;
-		  }
-	  }
-
-	  if (g_diaver[i] == 14000)
-	  {
-		  HMODULE hmod = LoadLibraryEx("symsrv.dll", NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_WITH_ALTERED_SEARCH_PATH);
-		  if (!hmod)
-		  {
-			   warning("The \"symsrv.dll\" file cannot be found, so it may not be possible to download symbols online!");
-		  }
-		  else
-		  {
-			  FreeLibrary(hmod);
-			  hmod = NULL;
 		  }
 	  }
 

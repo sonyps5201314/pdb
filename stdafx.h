@@ -27,3 +27,5 @@
 #include <atlstr.h>
 
 #include "misc.h"
+
+#pragma comment(lib,"Version.lib")
