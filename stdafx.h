@@ -24,4 +24,6 @@
 #include <Setup.Configuration.h>
 #include "Helpers.h"
 
+#include <atlstr.h>
+
 #include "misc.h"

@@ -527,9 +527,6 @@ void pdb_session_t::close()
 }
 
 //----------------------------------------------------------------------
-typedef BOOL (CALLBACK *SymbolServerSetOptions_t)(UINT_PTR options, ULONG64 data);
-typedef BOOL (CALLBACK *SymbolServerGetOptionData_t)(UINT_PTR option, PULONG64 pData);
-
 #include "dbghelp.h"
 // copied from dbghelp.h
 #ifndef SSRVOPT_CALLBACK
@@ -567,6 +564,25 @@ static void symsrv_dprint(const char *str)
   deb(IDA_DEBUG_DEBUGGER, "%s", qbuf.c_str());
 }
 
+static int GetDownloadPercentFromSymbolServerMessage(CString& Src)
+{
+	int result = 0;
+	if (Src.Find("copied") == -1)
+	{
+		if (Src.Find("percent") != -1)
+		{
+			Src.TrimLeft('\b');
+			char* EndPtr = NULL;
+			result = strtol(Src, &EndPtr, 10);
+		}
+	}
+	else
+	{
+		result = 100;
+	}
+	return result;
+}
+
 //----------------------------------------------------------------------
 static BOOL CALLBACK SymbolServerCallback(
         UINT_PTR action,
@@ -585,20 +601,40 @@ static BOOL CALLBACK SymbolServerCallback(
       break;
     case SSRVACTION_QUERYCANCEL:
       {
-        BOOL *do_cancel = (BOOL *) data;
-        if ( user_cancelled() )
-          *do_cancel = TRUE;
+        //https://docs.microsoft.com/ja-jp/windows/win32/api/dbghelp/nc-dbghelp-psymbolservercallbackproc
+        //文档说明是取消变量*data是ULONG64类型
+		ULONG64* do_cancel = (ULONG64*)data;
+		*do_cancel = user_cancelled();
       }
       break;
     case SSRVACTION_TRACE:
       symsrv_dprint((const char *)data);
+      ATLTRACE((const char*)data);
       break;
     case SSRVACTION_EVENT:
       IMAGEHLP_CBA_EVENT *pev = (IMAGEHLP_CBA_EVENT*)data;
       // Event information is usually all zero.
       if ( pev->severity != 0 || pev->code != 0 || pev->object != NULL )
         deb(IDA_DEBUG_DEBUGGER, "SYMSRV: event severity: %d code: %d object: %p\n", pev->severity, pev->code, pev->object);
-      symsrv_dprint(pev->desc);
+	  CString strText;
+	  if (IS_INTRESOURCE(pev->desc))
+	  {
+		  strText.LoadString((UINT)pev->desc);
+	  }
+	  else
+	  {
+		  strText = pev->desc;
+	  }
+	  if (strText.Find('\b') == -1 && strText.Find("percent") == -1 && strText.Find("copied") == -1)
+	  {
+		  symsrv_dprint(strText);
+		  ATLTRACE(strText);
+	  }
+	  else
+	  {
+		  int nPercent = GetDownloadPercentFromSymbolServerMessage(strText);
+		  replace_wait_box("Downloading pdb (%d%%)", nPercent);
+	  }
       break;
   }
   return TRUE;
@@ -609,8 +645,8 @@ class symsrv_cb_t
 {
   HMODULE symsrv_hmod;
   bool wait_box_shown;
-  SymbolServerGetOptionData_t get_option_data; // "DbgHelp.dll 10.0 or later"
-  SymbolServerSetOptions_t set_options;
+  PSYMBOLSERVERGETOPTIONDATAPROC get_option_data; // "DbgHelp.dll 10.0 or later"
+  PSYMBOLSERVERSETOPTIONSPROC set_options;
   ULONG64 was_context;
   ULONG64 was_callback;
 
@@ -629,14 +665,14 @@ public:
   {
     if ( symsrv_hmod != NULL )
     {
-      get_option_data = (SymbolServerGetOptionData_t)(void *)GetProcAddress(symsrv_hmod, "SymbolServerGetOptionData");
+      get_option_data = (PSYMBOLSERVERGETOPTIONDATAPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerGetOptionData");
       if ( get_option_data != NULL )
       {
         was_context = get_option_data(SSRVOPT_SETCONTEXT, &was_context);
         was_callback = get_option_data(SSRVOPT_CALLBACK, &was_callback);
       }
 
-      set_options = (SymbolServerSetOptions_t)(void *)GetProcAddress(symsrv_hmod, "SymbolServerSetOptions");
+      set_options = (PSYMBOLSERVERSETOPTIONSPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerSetOptions");
       if ( set_options != NULL )
       {
         set_options(SSRVOPT_SETCONTEXT, (ULONG64) (intptr_t) &wait_box_shown);
@@ -1127,10 +1163,9 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 
     used_fname = path;
 
-	//注释掉下面这种粗暴的使用symsrv的方式，不兼容最新版本的symsrv.dll了，或导致下载了的文件无法重命名为正确的名称
-    //// Setup symsrv callback to show wait box for pdb downloading
-    //symsrv_cb_t symsrv_cb;
-    //symsrv_cb.init();
+    // Setup symsrv callback to show wait box for pdb downloading
+    symsrv_cb_t symsrv_cb;
+    symsrv_cb.init();
 
     // Try searching for PDB information from the debug directory in a
     // PE file. Either the input file is read directly or the contents
@@ -1138,8 +1173,8 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
     hr = load_input_path(pdbargs, path.c_str());
     pdb_loaded = (hr == S_OK);
 
-    //// Hide wait box for pdb downloading if needed
-    //symsrv_cb.term();
+    // Hide wait box for pdb downloading if needed
+    symsrv_cb.term();
   }
 
   // Failed? Then nothing else to try, quit
