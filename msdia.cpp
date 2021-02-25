@@ -687,14 +687,9 @@ public:
 							// Doesn't matter if you are on 32 bit or 64 bit,
 							// DWORD is always 32 bits, so first two revision numbers
 							// come from dwFileVersionMS, last two come from dwFileVersionLS
-							CStringW strVersion;
-							strVersion.Format(L"%d.%d.%d.%d",
-								(verInfo->dwFileVersionMS >> 16) & 0xffff,
-								(verInfo->dwFileVersionMS >> 0) & 0xffff,
-								(verInfo->dwFileVersionLS >> 16) & 0xffff,
-								(verInfo->dwFileVersionLS >> 0) & 0xffff
-							);
-							if (CompareFileVersion(strVersion, L"10.0.19596.1001") < 0)
+							ULONGLONG ullCurVersion = make_ulonglong(verInfo->dwFileVersionLS, verInfo->dwFileVersionMS);
+							ULONGLONG ullMinVersion = make_ulonglong(MAKELONG(1001, 19596), MAKELONG(0, 10));
+							if (ullCurVersion < ullMinVersion)
 							{
 								warning("The version of the symsrv.dll file is lower than 10.0.19596.1001, so it cannot support immediate cancellation of the download operation!");
 							}
