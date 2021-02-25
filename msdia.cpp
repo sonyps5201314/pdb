@@ -862,14 +862,14 @@ HRESULT pdb_session_t::check_and_load_pdb(
 
 						  qstring strExeFile;
 
-						  qwstring strVsInstallationPathW;
+                          bstr_t bstrVsInstallationPath;
 						  ULONGLONG ullVersion;
-						  hr = GetMaxVersionVsInstallationPath(strVsInstallationPathW, ullVersion);
+						  hr = GetMaxVersionVsInstallationPath(bstrVsInstallationPath, ullVersion);
 						  ASSERT(hr == S_OK);
 						  BOOL bUseVs2015MsPdbCmf = FALSE;
 						  if (hr == S_OK)
 						  {
-							  qstring strVsInstallationPath(utf16_utf8(strVsInstallationPathW.c_str()));
+							  qstring strVsInstallationPath(utf16_utf8(bstrVsInstallationPath));
 
 							  ULARGE_INTEGER uli;
 							  uli.QuadPart = ullVersion;
@@ -1285,15 +1285,19 @@ fail:
 
 static qstring get_msdia140_dll_path()
 {
-	qwstring strVsInstallationPath;
+	bstr_t bstrVsInstallationPath;
 	ULONGLONG ullVersion;
-	HRESULT hr = GetMaxVersionVsInstallationPath(strVsInstallationPath, ullVersion);
+	HRESULT hr = GetMaxVersionVsInstallationPath(bstrVsInstallationPath, ullVersion);
 	ASSERT(hr == S_OK);
 	if (hr == S_OK)
 	{
-		strVsInstallationPath += L"\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
+        //Remote Debugger目录下的msdia140.dll的版本比DIA SDK目录下的高一个修订版本号且带有symsrv.dll，
+        //所以我们使用这个目录下的版本，
+        //虽然目前这个目录下的symsrv.dll版本会太低了，无法支持立刻取消下载，但是未来这个symsrv.dll的版本肯定会被升级的，
+        //到时候我们就不需要自己提供更高版本的symsrv.dll文件了
+		bstrVsInstallationPath += L"\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
 	}
-	return utf16_acp(strVsInstallationPath.c_str());
+	return utf16_acp(bstrVsInstallationPath);
 }
 
 //----------------------------------------------------------------------

@@ -21,7 +21,7 @@ _COM_SMARTPTR_TYPEDEF(ISetupInstanceCatalog, __uuidof(ISetupInstanceCatalog));
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
 	_In_ ISetupHelper* pHelper,
-	qwstring& MaxVsInstanceVersion
+	bstr_t& MaxVsInstanceVersion
 );
 
 //void PrintPackageReference(
@@ -36,7 +36,7 @@ BOOL FindVcInWorkloads(
     _In_ LPSAFEARRAY psaPackages
 );
 
-HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLONG& ullVersion)
+HRESULT GetMaxVersionVsInstallationPath(bstr_t& bstrVsInstallationPath, ULONGLONG& ullVersion)
 {
     try
     {
@@ -44,7 +44,7 @@ HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLO
         ISetupConfigurationPtr query;
 
 		std::vector<ISetupInstancePtr> SetupInstances;
-		qwstring MaxVsInstanceVersion;
+        bstr_t MaxVsInstanceVersion;
 
         auto hr = query.CreateInstance(__uuidof(SetupConfiguration));
         if (REGDB_E_CLASSNOTREG == hr)
@@ -93,7 +93,7 @@ HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLO
 			{
 				throw win32_exception(hr, "failed to get InstallationVersion");
 			}
-			if (!wcscmp(bstrVersion, MaxVsInstanceVersion.c_str()))
+			if (!wcscmp(bstrVersion, MaxVsInstanceVersion))
 			{
 				if (FAILED(hr = helper->ParseVersion(bstrVersion, &ullVersion)))
 				{
@@ -107,7 +107,7 @@ HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLO
 				}
 
 				//wcout << L"Max Vs InstallationPath: " << bstrInstallationPath << endl;
-				strVsInstallationPath = bstrInstallationPath;
+				bstrVsInstallationPath = bstrInstallationPath;
 			}
 		}
 		SetupInstances.clear();
@@ -129,7 +129,7 @@ HRESULT GetMaxVersionVsInstallationPath(qwstring& strVsInstallationPath, ULONGLO
 void PrintInstance(
     _In_ ISetupInstance* pInstance,
     _In_ ISetupHelper* pHelper,
-	qwstring& MaxVsInstanceVersion
+    bstr_t& MaxVsInstanceVersion
 )
 {
     HRESULT hr = S_OK;
@@ -215,11 +215,11 @@ void PrintInstance(
 		BOOL bFind = FindVcInWorkloads(psa);
 		if (bFind)
 		{
-			if (MaxVsInstanceVersion.empty())
+			if (MaxVsInstanceVersion.length() == 0)
 			{
 				MaxVsInstanceVersion = bstrVersion;
 			}
-			else if (CompareFileVersion(bstrVersion, MaxVsInstanceVersion.c_str()) > 0)
+			else if (CompareFileVersion(bstrVersion, MaxVsInstanceVersion) > 0)
 			{
 				MaxVsInstanceVersion = bstrVersion;
 			}
