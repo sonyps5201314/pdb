@@ -1038,7 +1038,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
   if (hr == S_OK)
   {
 	  IDiaSession* pDiaSession = NULL;
-	  hr = pSource->openSession(&pDiaSession);
+	  HRESULT hr = pSource->openSession(&pDiaSession);
 
 	  ASSERT(hr == S_OK);
 	  if (hr == S_OK)
