@@ -1547,11 +1547,13 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
   // "C:\Program Files (x86)\Common Files\microsoft shared\VC"
   char common_files[QMAXPATH];
   qstring vc_shared;
+#ifndef __IS_MSDIA100_OR_GREATER__
   if ( get_special_folder(common_files, sizeof(common_files), CSIDL_PROGRAM_FILES_COMMON) )
   {
     vc_shared = common_files;
     vc_shared.append("\\Microsoft Shared\\VC");
   }
+#endif
 
   for ( size_t i=0; i < qnumber(g_msdiav); i++ )
   {
@@ -1582,7 +1584,8 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 	  }
 	  if (!path[0])
 	  {
-		  if (!search_path(path, sizeof(path), g_diadlls[i], false)
+		  if (SearchPathA(NULL, g_diadlls[i], NULL, qnumber(path), path, NULL) == 0
+              && !search_path(path, sizeof(path), g_diadlls[i], false)
 			  && (vc_shared.empty()
 				  || SearchPathA(vc_shared.c_str(), g_diadlls[i], NULL,
 					  qnumber(path), path, NULL) == 0))
