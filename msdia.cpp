@@ -405,7 +405,7 @@ static const GUID *const g_d90 = &__uuidof(DiaSource90);  // msdia90.dll
 static const GUID *const g_d80 = &__uuidof(DiaSource80);  // msdia80.dll
 static const GUID *const g_d71 = &__uuidof(DiaSource71);  // msdia71.dll
 static const GUID *const g_msdiav[] = { &__uuidof(DiaSource), g_d90, g_d80, g_d71 };
-static const int         g_diaver[] = { 14000,   900,   800,   710 };
+static const int         g_diaver[] = { 1400,   900,   800,   710 };
 static const char *const g_diadlls[] = { "msdia140.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
 
 //----------------------------------------------------------------------
@@ -1554,7 +1554,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
       // Search for this interface in DIA dlls
       char path[QMAXPATH];
 	  path[0] = 0;
-	  if (g_diaver[i] == 14000)
+	  if (g_diaver[i] == 1400)
 	  {
 		  qstring msdia140_dll_path = get_msdia140_dll_path();
 		  if (!msdia140_dll_path.empty())

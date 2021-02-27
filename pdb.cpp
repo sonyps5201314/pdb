@@ -675,7 +675,7 @@ HRESULT pdb_til_builder_t::handle_function_child(
     case LocIsRegRel:
       if ( child_sym.get_registerId(&reg_id) == S_OK
         && child_sym.get_offset(&offset) == S_OK
-        && reg_id == CV_REG_EBP )     // we can handle only ebp for the moment
+        && (pdb_access->get_dia_version() >= 1400 ? reg_id == CV_ALLREG_VFRAME : reg_id == CV_REG_EBP))     // we can handle only ebp for the moment
       {
         func_t *pfn = get_func(ea);
         if ( pfn != NULL )
