@@ -641,14 +641,18 @@ static BOOL CALLBACK SymbolServerCallback(
 }
 
 //----------------------------------------------------------------------------
+typedef BOOL(WINAPI* HTTPOPENFILEHANDLE)(LPCSTR, LPCSTR, DWORD, HANDLE*, HANDLE*);
+typedef BOOL(WINAPI* HTTPQUERYDATAAVAILABLE)(HANDLE, LPDWORD, DWORD, DWORD_PTR);
+typedef BOOL(WINAPI* HTTPREADFILE)(HANDLE, LPVOID, DWORD, LPDWORD);
+typedef BOOL(WINAPI* HTTPCLOSEHANDLE)(HANDLE);
 class symsrv_cb_t
 {
   HMODULE symsrv_hmod;
   bool wait_box_shown;
   PSYMBOLSERVERGETOPTIONDATAPROC get_option_data; // "DbgHelp.dll 10.0 or later"
   PSYMBOLSERVERSETOPTIONSPROC set_options;
-  ULONG64 was_context;
-  ULONG64 was_callback;
+  ULONG64 old_context_data;
+  ULONG64 old_callback_data;
 
 public:
   symsrv_cb_t(void)
@@ -704,19 +708,19 @@ public:
     wait_box_shown = false;
     get_option_data = NULL;
     set_options = NULL;
-    was_context = 0;
-    was_callback = 0;
+    old_context_data = 0;
+    old_callback_data = 0;
   }
 
-  void init(void)
+  void init(pdbargs_t& pdbargs)
   {
     if ( symsrv_hmod != NULL )
     {
       get_option_data = (PSYMBOLSERVERGETOPTIONDATAPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerGetOptionData");
       if ( get_option_data != NULL )
       {
-        was_context = get_option_data(SSRVOPT_SETCONTEXT, &was_context);
-        was_callback = get_option_data(SSRVOPT_CALLBACK, &was_callback);
+        get_option_data(SSRVOPT_SETCONTEXT, &old_context_data);
+        get_option_data(SSRVOPT_CALLBACK, &old_callback_data);
       }
 
       set_options = (PSYMBOLSERVERSETOPTIONSPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerSetOptions");
@@ -729,6 +733,198 @@ public:
           set_options(SSRVOPT_TRACE, (ULONG64) TRUE);
         }
       }
+
+	  CRegKey key;
+	  if (!key.Open(HKEY_CURRENT_USER, "Software\\DownloadManager", KEY_READ))
+	  {
+		  TCHAR szExePath[MAX_PATH];
+		  ULONG nChars = _countof(szExePath);
+		  if (!key.QueryStringValue("ExePath", szExePath, &nChars))
+		  {
+			  if (qfileexist(szExePath))
+			  {
+				  HMODULE hmod = symsrv_hmod;
+				  HTTPOPENFILEHANDLE httpOpenFileHandle = (HTTPOPENFILEHANDLE)GetProcAddress(hmod, "httpOpenFileHandle");
+				  HTTPQUERYDATAAVAILABLE httpQueryDataAvailable = (HTTPQUERYDATAAVAILABLE)GetProcAddress(hmod, "httpQueryDataAvailable");
+				  HTTPREADFILE httpReadFile = (HTTPREADFILE)GetProcAddress(hmod, "httpReadFile");
+				  HTTPCLOSEHANDLE httpCloseHandle = (HTTPCLOSEHANDLE)GetProcAddress(hmod, "httpCloseHandle");
+				  BOOL bHttpIsValid = httpOpenFileHandle && httpQueryDataAvailable && httpReadFile && httpCloseHandle;
+				  ASSERT(bHttpIsValid);
+				  if (bHttpIsValid)
+				  {
+					  PSYMBOLSERVERGETINDEXSTRING get_index_string = (PSYMBOLSERVERGETINDEXSTRING)GetProcAddress(symsrv_hmod, "SymbolServerGetIndexString");
+					  ASSERT(get_index_string);
+					  if (get_index_string)
+					  {
+						  ASSERT(sizeof(pdbargs.pdb_sign.guid) == sizeof(GUID));
+						  CHAR szIndexString[sizeof(GUID) * 2 + 1 + 1];
+						  set_options(SSRVOPT_PARAMTYPE, SSRVOPT_GUIDPTR);
+						  BOOL bResult = get_index_string(pdbargs.pdb_sign.guid, pdbargs.pdb_sign.age, 0, szIndexString, _countof(szIndexString));
+						  ASSERT(bResult);
+						  if (bResult)
+						  {
+							  const char* pdb_name = qbasename(pdbargs.pdb_path.c_str());
+							  qstring path;
+							  path.sprnt("%s/%s/%s", pdb_name, szIndexString, pdb_name);
+
+							  bool bFindCache = false;
+							  qvector<qstring> cache_paths;
+							  qvector<qstring> srvs;
+
+							  qstring spath(pdbargs.spath);
+							  LPSTR next_token = NULL;
+							  LPSTR token = qstrtok(spath.begin(), ";", &next_token);
+							  while (token != NULL)
+							  {
+								  qstring item(token);
+								  LPSTR next_token_item = NULL;
+								  LPTSTR spath_prefix = qstrtok(item.begin(), "*", &next_token_item);
+								  ASSERT(spath_prefix);
+								  if (!strnicmp(spath_prefix, "srv", _countof("srv") - 1))
+								  {
+									  LPTSTR cache_path = qstrtok(NULL, "*", &next_token_item);
+									  ASSERT(cache_path);
+									  if (cache_path)
+									  {
+										  qstring cache_file;
+										  cache_file.sprnt("%s\\%s", cache_path, path.c_str());
+										  if (qfileexist(cache_file.c_str()))
+										  {
+											  bFindCache = true;
+											  break;
+										  }
+										  cache_paths.push_back(cache_path);
+										  LPTSTR srv = qstrtok(NULL, "*", &next_token_item);
+										  if (srv)
+										  {
+											  srvs.push_back(srv);
+										  }
+										  else
+										  {
+											  ASSERT(srv);
+											  break;
+										  }
+									  }
+								  }
+								  else
+								  {
+									  ASSERT(FALSE);
+									  break;
+								  }
+
+								  // Get next token: 
+								  token = qstrtok(NULL, ";", &next_token);
+							  }
+
+							  if (!bFindCache)
+							  {
+								  for (size_t i = 0; i < cache_paths.size(); i++)
+								  {
+									  LPCSTR srv = srvs[i].c_str();
+									  HANDLE hsite, hfile;
+									  BOOL bResult = httpOpenFileHandle(srv, path.c_str(), 0, &hsite, &hfile);
+									  if (!bResult)
+									  {
+										  //尝试查找压缩格式的PDB文件(Mozilla服务器只提供了压缩格式，目前版本的IDA的PDB插件并不支持)
+										  qstring path_Compressed;//CompressedFileName
+										  path_Compressed = path.substr(0, path.length() - 1);
+										  path_Compressed.append('_');
+										  BOOL bResult_Compressed = httpOpenFileHandle(srv, path_Compressed.c_str(), 0, &hsite, &hfile);
+										  if (bResult_Compressed)
+										  {
+											  //由于需要处理CAB,LZExpand,ZIP的解压，所以目前我们暂时不处理，UncompressFile
+											  //此时回落到使用symsrv.dll进行下载
+											  msg("PDB: The external downloader currently does not support downloading compressed PDB files.\n");
+											  break;
+										  }
+									  }
+									  if (bResult)
+									  {
+										  DWORD dwNumberOfBytesAvailable;
+										  if (httpQueryDataAvailable(hfile, &dwNumberOfBytesAvailable, 0, 0))
+										  {
+											  char szBuffer[64];
+											  DWORD dwNumberOfBytesToRead = __min(_countof(szBuffer), dwNumberOfBytesAvailable);
+											  DWORD dwNumberOfBytesRead;
+											  if (httpReadFile(hfile, szBuffer, dwNumberOfBytesToRead, &dwNumberOfBytesRead))
+											  {
+												  if (dwNumberOfBytesRead == dwNumberOfBytesToRead)
+												  {
+													  //下载下来的不一定是一个PDB文件，老版本symsrv.dll甚至会把HTTP 404 Not Found的数据都读取出来
+													  if (!strncmp(szBuffer, "Microsoft C/C++ ", _countof("Microsoft C/C++ ") - 1))
+													  {
+														  ATLTRACE("FIND PDB IN SERVER: %s\n", srv);
+														  qstring url(srv);
+														  if (url[url.length() - 1] != '/')
+														  {
+															  url.append('/');
+														  }
+														  url.append(path);
+
+														  char szRelPath[MAX_PATH];
+														  szRelPath[0] = 0;
+														  qdirname(szRelPath, _countof(szRelPath), path.c_str());
+														  size_t nRelPathLen = qstrlen(szRelPath);
+														  for (size_t j = 0; j < nRelPathLen; j++)
+														  {
+															  if (szRelPath[j] == '/')
+															  {
+																  szRelPath[j] = '\\';
+															  }
+														  }
+														  qstring local_path(cache_paths[i]);
+														  if (local_path[local_path.length() - 1] != '\\')
+														  {
+															  local_path.append('\\');
+														  }
+														  local_path.append(szRelPath);
+
+														  qstring local_full_path(local_path);
+														  local_full_path.append('\\');
+														  local_full_path.append(pdb_name);
+														  if (qfileexist(local_full_path.c_str()))
+														  {
+															  qunlink(local_full_path.c_str());
+														  }
+
+														  show_wait_box("Waiting for external download to complete...\n%s", url.c_str());
+
+														  qstring strArgs;
+														  strArgs.sprnt("/d \"%s\" /p \"%s\" /f \"%s\" /q /n", url.c_str(), local_path.c_str(), pdb_name);
+														  launch_process_params_t lpp;
+														  lpp.flags = 0;
+														  lpp.path = szExePath;
+														  lpp.args = strArgs.c_str();
+														  qstring errbuf;
+														  void* handle = launch_process(lpp, &errbuf);
+														  if (handle)
+														  {
+															  int exit_code = 0;
+															  check_process_exit(handle, &exit_code);
+															  handle = NULL;
+															  while (!qfileexist(local_full_path.c_str()))
+															  {
+																  Sleep(50);
+															  }
+														  }
+														  hide_wait_box();
+													  }
+												  }
+											  }
+										  }
+										  httpCloseHandle(hfile);
+										  hfile = NULL;
+										  httpCloseHandle(hsite);
+										  hsite = NULL;
+									  }
+								  }
+							  }
+						  }
+					  }
+				  }
+			  }
+		  }
+	  }
     }
   }
 
@@ -738,8 +934,8 @@ public:
     {
       if ( set_options != NULL )
       {
-        set_options(SSRVOPT_SETCONTEXT, was_context);
-        set_options(SSRVOPT_CALLBACK, was_callback);
+        set_options(SSRVOPT_SETCONTEXT, old_context_data);
+        set_options(SSRVOPT_CALLBACK, old_callback_data);
       }
       FreeLibrary(symsrv_hmod);
       symsrv_hmod = NULL;
@@ -1212,7 +1408,7 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 
     // Setup symsrv callback to show wait box for pdb downloading
     symsrv_cb_t symsrv_cb;
-    symsrv_cb.init();
+    symsrv_cb.init(pdbargs);
 
     // Try searching for PDB information from the debug directory in a
     // PE file. Either the input file is read directly or the contents
