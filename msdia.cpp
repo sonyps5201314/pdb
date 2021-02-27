@@ -899,13 +899,42 @@ public:
 														  void* handle = launch_process(lpp, &errbuf);
 														  if (handle)
 														  {
-															  int exit_code = 0;
-															  check_process_exit(handle, &exit_code);
-															  handle = NULL;
 															  while (!qfileexist(local_full_path.c_str()))
 															  {
-																  Sleep(50);
+																  if (handle)
+																  {
+																	  int exit_code = 0;
+																	  if (check_process_exit(handle, &exit_code, 50) == 0)
+																	  {
+																		  handle = NULL;
+																	  }
+																  }
+																  else
+																  {
+																	  Sleep(50);
+																  }
+																  if (user_cancelled())
+																  {
+																	  break;
+																  }
 															  }
+
+                                                              if (qfileexist(local_full_path.c_str()))
+                                                              {
+																  //等待第三方下载工具写入完成，也即我们能获取到独占写入权限的时候
+																  do
+																  {
+																	  FILE* file = qfopen(local_full_path.c_str(), "a+b");
+																	  if (file)
+																	  {
+																		  qfclose(file);
+																		  file = NULL;
+
+																		  break;
+																	  }
+																	  Sleep(50);
+																  } while (TRUE);
+                                                              }
 														  }
 														  hide_wait_box();
 													  }
