@@ -17,6 +17,12 @@
 #include "pdblocal.cpp"
 #include "dia2_internal.h"
 #include "Program.h"
+//因为从Visual Studio 2010开始DIA SDK的各个接口的虚表结构就改变了(虽然接口名字并没改变还是叫IDiaSession、IDiaSymbol等)，
+//因此一套源码不能编译为同时支持两种不同虚表结构的接口的组件
+__if_exists(IDiaSession::findChildrenEx)
+{
+#define __IS_MSDIA100_OR_GREATER__
+}
 
 //lint -esym(843, g_diadlls, g_pdb_errors, PathIsUNC) could be declared as const
 
@@ -375,10 +381,12 @@ inline void pdberr_suggest_vs_runtime(HRESULT hr)
   if ( hr == E_NOINTERFACE )
   {
     msg("<< It appears that MS DIA SDK is not installed.\n");
+#ifndef __IS_MSDIA100_OR_GREATER__
 #ifdef __X86__
     msg("Please try installing \"Microsoft Visual C++ 2008 Redistributable Package / x86\" >>\n");
 #else
     msg("Please try installing \"Microsoft Visual C++ 2008 Redistributable Package / x64\" >>\n");
+#endif
 #endif
   }
 }
@@ -398,15 +406,21 @@ const char *pdberr(int code)
 }
 
 //----------------------------------------------------------------------
+#ifdef __IS_MSDIA100_OR_GREATER__
+static const GUID* const g_msdiav[] = { &__uuidof(DiaSource) };
+static const int         g_diaver[] = { 1400 };
+static const char* const g_diadlls[] = { "msdia140.dll" };
+#else
 class DECLSPEC_UUID("4C41678E-887B-4365-A09E-925D28DB33C2") DiaSource90;
 class DECLSPEC_UUID("1fbd5ec4-b8e4-4d94-9efe-7ccaf9132c98") DiaSource80;
 class DECLSPEC_UUID("31495af6-0897-4f1e-8dac-1447f10174a1") DiaSource71;
 static const GUID *const g_d90 = &__uuidof(DiaSource90);  // msdia90.dll
 static const GUID *const g_d80 = &__uuidof(DiaSource80);  // msdia80.dll
 static const GUID *const g_d71 = &__uuidof(DiaSource71);  // msdia71.dll
-static const GUID *const g_msdiav[] = { &__uuidof(DiaSource), g_d90, g_d80, g_d71 };
-static const int         g_diaver[] = { 1400,   900,   800,   710 };
-static const char *const g_diadlls[] = { "msdia140.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
+static const GUID *const g_msdiav[] = { g_d90, g_d80, g_d71 };
+static const int         g_diaver[] = { 900,   800,   710 };
+static const char *const g_diadlls[] = { "msdia90.dll", "msdia80.dll", "msdia71.dll" };
+#endif
 
 //----------------------------------------------------------------------
 HRESULT __stdcall CoCreateInstanceNoReg(
