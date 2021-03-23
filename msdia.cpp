@@ -19,10 +19,14 @@
 #include "Program.h"
 //因为从Visual Studio 2010开始DIA SDK的各个接口的虚表结构就改变了(虽然接口名字并没改变还是叫IDiaSession、IDiaSymbol等)，
 //因此一套源码不能编译为同时支持两种不同虚表结构的接口的组件
-__if_exists(IDiaSession::findChildrenEx)
-{
+//使用低于Visual Studio 2010提供的DIA SDK的版本时需要注释掉下面这个__IS_MSDIA100_OR_GREATER__宏，不然会报错提示
 #define __IS_MSDIA100_OR_GREATER__
+#ifdef __IS_MSDIA100_OR_GREATER__
+__if_not_exists(IDiaSession::findChildrenEx)
+{
+    static int temp_result_for__IS_MSDIA100_OR_GREATER__ = _CrtDbgReportW(_CRT_ASSERT, _CRT_WIDE(__FILE__), __LINE__, NULL, L"%ls", L"PLEASE undefine __IS_MSDIA100_OR_GREATER__");
 }
+#endif
 
 //lint -esym(843, g_diadlls, g_pdb_errors, PathIsUNC) could be declared as const
 
