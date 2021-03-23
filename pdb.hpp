@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2005-2020 Hex-Rays SA <support@hex-rays.com>
+// Copyright (c) 2005-2021 Hex-Rays SA <support@hex-rays.com>
 // ALL RIGHTS RESERVED.
 //
 #pragma once
@@ -53,11 +53,12 @@ struct pdbargs_t
   ea_t loaded_base;
   void *user_data;
   uint32 flags;
-#define PDBFLG_DBG_MODULE  0x01
-#define PDBFLG_ONLY_TYPES  0x02
-#define PDBFLG_EFD         0x04
-#define PDBFLG_COFF_FILE   0x08
-#define PDBFLG_IS_MINIPDB  0x10
+#define PDBFLG_DBG_MODULE  0x0001
+#define PDBFLG_ONLY_TYPES  0x0002
+#define PDBFLG_EFD         0x0004
+#define PDBFLG_COFF_FILE   0x0008
+#define PDBFLG_IS_MINIPDB  0x0010
+#define PDBFLG_USE_HTTP    0x0100
 
   pdbargs_t(void)
     : loaded_base(BADADDR),
@@ -74,6 +75,7 @@ struct pdbargs_t
   }
   // PDB?
   bool is_pdbfile(void) const { return (flags & PDBFLG_COFF_FILE) == 0; }
+  bool use_http() const { return (flags & PDBFLG_USE_HTTP) != 0; }
 
   const char *fname(void) const
   {
@@ -82,7 +84,7 @@ struct pdbargs_t
 };
 
 //----------------------------------------------------------------------------
-struct pdb_ctx_t : public plugmod_t
+struct pdb_ctx_t : public plugmod_t, public event_listener_t
 {
   processor_t &ph;
 
@@ -99,6 +101,18 @@ struct pdb_ctx_t : public plugmod_t
 #define PDB_PROVIDER_MSDIA  1   // use MSDIA local/remote provider
 #define PDB_PROVIDER_PDBIDA 2   // use PDBIDA provider
   uint pdb_provider = PDB_PROVIDER_MSDIA;
+#define PDB_NETWORK_OFF 0   // local directories search only
+#define PDB_NETWORK_PE  1   // local directories search for COFF, full search for PE
+#define PDB_NETWORK_ON  2   // no restrictions
+  uint pdb_network = PDB_NETWORK_PE;
+  bool use_http(bool is_pe) const
+  {
+    bool ok = pdb_network == PDB_NETWORK_PE && is_pe
+           || pdb_network == PDB_NETWORK_ON;
+    deb(IDA_DEBUG_DBGINFO, ok ? "PDB: symbol servers will be used\n"
+                              : "PDB: local directories search only\n");
+    return ok;
+  }
 
   // Plugin options
   uint opt_provider = 0;
@@ -116,6 +130,7 @@ struct pdb_ctx_t : public plugmod_t
   pdb_ctx_t();
   virtual ~pdb_ctx_t();
   virtual bool idaapi run(size_t arg) override;
+  virtual ssize_t idaapi on_event(ssize_t code, va_list va) override;
 
   void parse_options(bool *opt_skip);
 

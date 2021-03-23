@@ -313,11 +313,11 @@ void print_pdb_register(qstring *out, int machine, int reg)
         case CV_R68_CAAR:    *out = "CAAR"; return;
         case CV_R68_ISP:     *out = "ISP"; return;
         case CV_R68_PC:      *out = "PC"; return;
-        //reserved  27
+        // reserved  27
         case CV_R68_FPCR:    *out = "FPCR"; return;
         case CV_R68_FPSR:    *out = "FPSR"; return;
         case CV_R68_FPIAR:   *out = "FPIAR"; return;
-        //reserved  31
+        // reserved  31
         case CV_R68_FP0:     *out = "FP0"; return;
         case CV_R68_FP1:     *out = "FP1"; return;
         case CV_R68_FP2:     *out = "FP2"; return;
@@ -326,7 +326,7 @@ void print_pdb_register(qstring *out, int machine, int reg)
         case CV_R68_FP5:     *out = "FP5"; return;
         case CV_R68_FP6:     *out = "FP6"; return;
         case CV_R68_FP7:     *out = "FP7"; return;
-        //reserved  40
+        // reserved  40
         case CV_R68_MMUSR030:*out = "MMUSR030"; return;
         case CV_R68_MMUSR:   *out = "MMUSR"; return;
         case CV_R68_URP:     *out = "URP"; return;
@@ -334,7 +334,7 @@ void print_pdb_register(qstring *out, int machine, int reg)
         case CV_R68_DTT1:    *out = "DTT1"; return;
         case CV_R68_ITT0:    *out = "ITT0"; return;
         case CV_R68_ITT1:    *out = "ITT1"; return;
-        //reserved  50
+        // reserved  50
         case CV_R68_PSR:     *out = "PSR"; return;
         case CV_R68_PCSR:    *out = "PCSR"; return;
         case CV_R68_VAL:     *out = "VAL"; return;
@@ -347,7 +347,7 @@ void print_pdb_register(qstring *out, int machine, int reg)
         case CV_R68_CAL:     *out = "CAL"; return;
         case CV_R68_TT0:     *out = "TT0"; return;
         case CV_R68_TT1:     *out = "TT1"; return;
-        //reserved  63
+        // reserved  63
         case CV_R68_BAD0:    *out = "BAD0"; return;
         case CV_R68_BAD1:    *out = "BAD1"; return;
         case CV_R68_BAD2:    *out = "BAD2"; return;

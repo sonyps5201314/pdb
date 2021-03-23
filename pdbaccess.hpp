@@ -4,7 +4,6 @@
 #define PDBACCESS__H
 
 #include <set>
-#include <map>
 
 #include <pro.h>
 #include "cvconst.h"
@@ -173,7 +172,7 @@ struct pdb_sym_t
   virtual pdb_sym_id_t whoami(void) = 0;
   virtual bool empty(void) = 0;
 
-  DEFINE_VIRTUAL_DTOR(pdb_sym_t)
+  virtual ~pdb_sym_t() {}
 
   // Declare, but ***don't*** define: we don't want
   // that to happen, and thus we'll have a linker
@@ -556,7 +555,7 @@ public:
       global_sym_id(BADSYM)
   {
   }
-  DEFINE_VIRTUAL_DTOR(pdb_access_t);
+  virtual ~pdb_access_t() {}
 
   //----------------------------------------------------------------------
   struct children_visitor_t

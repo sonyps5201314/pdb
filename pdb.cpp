@@ -17,8 +17,6 @@
 #endif
 
 #include <memory>
-#include <set>
-#include <map>
 
 #include <ida.hpp>
 #include <idp.hpp>
@@ -33,6 +31,7 @@
 #include <struct.hpp>
 #include <typeinf.hpp>
 #include <demangle.hpp>
+
 #include <intel.hpp>
 #include <network.hpp>
 #include <workarounds.hpp>
@@ -61,6 +60,7 @@ int data_id;
 
 
 #include "sip.cpp"
+
 
 //----------------------------------------------------------------------
 static bool looks_like_function_name(const char *name)
@@ -153,7 +153,7 @@ static bool is_data_prefix(ea_t ea, const char *name)
   static const char *const data_prefixes[] =
   {
     "__IMPORT_DESCRIPTOR",
-    //"__imp_",             //imported function pointer
+    //"__imp_",             // imported function pointer
   };
   for ( int i=0; i < qnumber(data_prefixes); i++ )
     if ( strncmp(name, data_prefixes[i], strlen(data_prefixes[i])) == 0 )
@@ -546,7 +546,7 @@ bool pdb_til_builder_t::handle_symbol_at_ea(
           {
             qstring v;
             if ( tb->get_variant_string_value(&v, child) )
-              //set_cmt(ea, v.c_str(), false);
+              // set_cmt(ea, v.c_str(), false);
               ann_params.push_back(v);
             return S_OK;
           }
@@ -566,7 +566,10 @@ bool pdb_til_builder_t::handle_symbol_at_ea(
   // symbols starting with __imp__ cannot be functions
   if ( strncmp(name.c_str(), "__imp__", 7) == 0 )
   {
-    create_dword(ea, 4);
+    if ( inf_is_64bit() )
+      create_qword(ea, 8);
+    else
+      create_dword(ea, 4);
     maybe_func = -1;
   }
 
@@ -810,8 +813,9 @@ static const cfgopt_t g_opts[] =
   CFGOPT_QS("_NT_SYMBOL_PATH",    pdb_ctx_t, full_sympath,       true),
   CFGOPT_QS("PDB_REMOTE_SERVER",  pdb_ctx_t, pdb_remote_server,  true),
   CFGOPT_QS("PDB_REMOTE_PASSWD",  pdb_ctx_t, pdb_remote_passwd,  true),
-  CFGOPT_R("PDB_PROVIDER",		  pdb_ctx_t, pdb_provider, PDB_PROVIDER_MSDIA, PDB_PROVIDER_PDBIDA),
-  CFGOPT_QS("PDB_MSDIA_FALLBACK", pdb_ctx_t, opt_fallback, true),
+  CFGOPT_R ("PDB_NETWORK",        pdb_ctx_t, pdb_network,        PDB_NETWORK_OFF, PDB_NETWORK_ON),
+  CFGOPT_R("PDB_PROVIDER",		  pdb_ctx_t, pdb_provider,       PDB_PROVIDER_MSDIA, PDB_PROVIDER_PDBIDA),
+  CFGOPT_QS("PDB_MSDIA_FALLBACK", pdb_ctx_t, opt_fallback,       true),
 };
 
 //----------------------------------------------------------------------
@@ -1071,16 +1075,21 @@ fail:
 }
 
 //-------------------------------------------------------------------------
+static bool get_pdb_path(pdbargs_t *args, netnode penode)
+{
+  penode.supstr(&args->pdb_path, PE_SUPSTR_PDBNM);
+
+  return !args->pdb_path.empty(); // do not ask to load pdb with empty name
+}
+
+//-------------------------------------------------------------------------
 static bool get_details_from_pe(pdbargs_t *args)
 {
   netnode penode(PE_NODE);
-  args->loaded_base = penode.altval(PE_ALT_IMAGEBASE);
-  penode.supstr(&args->pdb_path, PE_SUPSTR_PDBNM);
-
+  if ( !get_pdb_path(args, penode) )
+    return false;
   args->input_path = get_input_path();
-
-  if ( args->pdb_path.empty() )
-    return false; // do not ask to load pdb with empty name
+  args->loaded_base = penode.altval(PE_ALT_IMAGEBASE);
 
   return ask_yn(ASKBTN_YES,
                 "AUTOHIDE REGISTRY\nHIDECANCEL\n"
@@ -1128,6 +1137,8 @@ bool pdb_ctx_t::apply_debug_info(pdbargs_t &pdbargs)
 
   init_sympaths();
   pdbargs.spath = full_sympath;
+
+  setflag(pdbargs.flags, PDBFLG_USE_HTTP, use_http(pdbargs.is_pdbfile()));
 
   bool ok = true;
   HRESULT hr = E_FAIL;
@@ -1353,8 +1364,15 @@ static plugmod_t *idaapi init()
 }
 
 //--------------------------------------------------------------------------
+ssize_t idaapi pdb_ctx_t::on_event(ssize_t event_id, va_list va)
+{
+  return 0;                     // event is not processed
+}
+
+//--------------------------------------------------------------------------
 pdb_ctx_t::pdb_ctx_t() : ph(PH)
 {
+  hook_event_listener(HT_IDP, this);
   memset(&pe, 0, sizeof(pe));
   alloc_pdb_srcinfo_provider();
   g_machine_type = CV_CFL_80386;
@@ -1368,7 +1386,6 @@ pdb_ctx_t::~pdb_ctx_t()
   unregister_srcinfo_provider(pdb_srcinfo_provider);
   free_pdb_srcinfo_provider();
   clr_module_data(data_id);
-  data_id = 0;
 }
 
 //--------------------------------------------------------------------------

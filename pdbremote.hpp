@@ -2,7 +2,6 @@
 #ifndef PDBREMOTE_HPP
 #define PDBREMOTE_HPP
 
-#include <map>
 #include <network.hpp>
 #include "../../dbg/win32/win32_rpc.h"
 #include "pdbaccess.hpp"

@@ -136,6 +136,7 @@ public:
         DWORD locType,
         int stack_off);
   void enum_function_args(pdb_sym_t &sym, func_type_data_t &args);
+  cvt_code_t verify_struct(pdb_udt_type_data_t &udt) const;
   cvt_code_t verify_union(
         pdb_udt_type_data_t *out,
         pdb_udt_type_data_t::iterator p1,
@@ -148,7 +149,7 @@ public:
   cvt_code_t convert_basetype(tpinfo_t *out, DWORD baseType, int size) const;
   cvt_code_t make_vtable_struct(tinfo_t *out, pdb_sym_t &sym);
   cvt_code_t convert_udt(tinfo_t *out, pdb_sym_t &sym, DWORD64 size);
-  cvt_code_t create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int udtKind) const;
+  cvt_code_t create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int udtKind, const char *udt_name) const;
   cvt_code_t create_udt_ref(tinfo_t *out, pdb_udt_type_data_t *udt, int udt_kind) const;
   cvt_code_t really_convert_type(tpinfo_t *out, pdb_sym_t &sym, pdb_sym_t *parent, DWORD tag);
   cvt_code_t convert_type(

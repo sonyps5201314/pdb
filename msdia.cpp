@@ -44,7 +44,7 @@ static bool check_for_odd_paths(const char *fname);
 class msdia_reader_t
 {
 public:
-  DEFINE_VIRTUAL_DTOR(msdia_reader_t);
+  virtual ~msdia_reader_t() {}
   virtual bool read(uint64 offset, void *buf, uint32 count, uint32 *nread) = 0;
   virtual bool setup(void) { return true; }
 };

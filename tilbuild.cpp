@@ -1,6 +1,4 @@
 
-#include <algorithm>
-
 #include "tilbuild.hpp"
 #include "misc.cpp"
 
@@ -211,13 +209,23 @@ MAKE_INT:
     case btInt:
     case btLong:
       bt = get_scalar_bt(size);
+      if ( bt == BT_UNK )
+        return cvt_failed;
       break;
     case btUInt:
     case btULong:
       if ( size == 1 )
+      {
         bt = BTF_UCHAR; // get_scalar_bt returns 'char', or'ing it with BTMT_USIGNED
-      else              // does not help
-        bt = get_scalar_bt(size)|BTMT_USIGNED;
+                        // does not help
+      }
+      else
+      {
+        bt = get_scalar_bt(size);
+        if ( bt == BT_UNK )
+          return cvt_failed;
+        bt |= BTMT_USIGNED;
+      }
       break;
     case btFloat:
       if ( size == pv.ph.sizeof_ldbl() )
@@ -587,6 +595,18 @@ void til_builder_t::enum_function_args(pdb_sym_t &_sym, func_type_data_t &args)
 }
 
 //----------------------------------------------------------------------
+// corrupted PDB may produce the strange results
+cvt_code_t til_builder_t::verify_struct(pdb_udt_type_data_t &udt) const
+{
+  for ( auto &udm : udt )
+  {
+    if ( !udm.is_bitfield() && (udm.offset % 8) != 0 )
+      return cvt_failed;
+  }
+  return cvt_ok;
+}
+
+//----------------------------------------------------------------------
 // verify unions that would be created out of [p1, p2) members.
 // The [p1, p2) members are spoiled by the function.
 // Create substructures if necessary. Returns the result in out (can be the same
@@ -655,6 +675,8 @@ cvt_code_t til_builder_t::verify_union(
     for ( pdb_udt_type_data_t::iterator p=s->begin(); p != s->end(); ++p )
       msg("  %" FMT_64 "x %s %s\n", p->offset, p->type.dstr(), p->name.c_str());
 #endif
+    if ( verify_struct(*s) != cvt_ok )
+      return cvt_failed;
     tinfo_t tif;
     int total_size = s->total_size;
     cvt_code_t code = create_udt_ref(&tif, s, UdtStruct);
@@ -825,7 +847,7 @@ static void merge_vftables(udt_type_data_t *dst_udt, const tinfo_t &srcvft, bool
   if ( !srcvft.get_udt_details(&src_udt) )
   {
     deb(IDA_DEBUG_DBGINFO, "PDB: failed to merge type '%s' to vftable\n", srcvft.dstr());
-#ifdef TESTABLE_BUILD
+#if defined(TESTABLE_BUILD) && !defined(__FUZZER__)
     INTERR(30585);
 #else
     return;
@@ -1064,6 +1086,8 @@ cvt_code_t til_builder_t::convert_udt(
       {
         sym.get_bitPosition(&dwBitPos);
         sym.get_length(&ulLen);
+        if ( dwBitPos + ulLen > DWORD64(memsize) * 8 )
+          return E_FAIL;
         bool is_unsigned = tpi.type.is_unsigned();
         udm.type.create_bitfield(memsize, ulLen, is_unsigned);
       }
@@ -1075,6 +1099,7 @@ cvt_code_t til_builder_t::convert_udt(
       udm.offset = uint64(offset) * 8 + dwBitPos;
       udm.bit_offset = dwBitPos;
       udm.name.swap(name);
+      ddeb(("PDEB:   convert_udt adding member size %" FMT_64 "u offset %" FMT_64 "u bit_offset %u\n", udm.size, udm.offset, udm.bit_offset));
       return S_OK;
     }
     type_name_collector_t(
@@ -1187,7 +1212,7 @@ cvt_code_t til_builder_t::convert_udt(
   BOOL cppobj;
   if ( _sym.get_constructor(&cppobj) == S_OK && cppobj > 0 )
     udt.taudt_bits |= TAUDT_CPPOBJ;
-  return create_udt(out, &udt, udtKind);
+  return create_udt(out, &udt, udtKind, udt_name.c_str());
 }
 
 //----------------------------------------------------------------------
@@ -1314,7 +1339,15 @@ static bool set_array_type(pdb_udt_member_t *udm, int nbytes)
 }
 
 //----------------------------------------------------------------------
-cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int udtKind) const
+// the real UDT should have non-zero size,
+// detect a forward reference to a UDT without a real definition
+inline bool is_fwdref_baseclass(pdb_udt_member_t &udm)
+{
+  return udm.is_baseclass() && udm.size == 0;
+}
+
+//----------------------------------------------------------------------
+cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int udtKind, const char *udt_name) const
 {
   cvt_code_t code;
   if ( udtKind == UdtUnion )
@@ -1342,7 +1375,7 @@ cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int
       continue;
     int gts_code = GTS_NESTED | (udm.is_baseclass() ? GTS_BASECLASS : 0);
     size_t nbytes = udm.type.get_size(NULL, gts_code);
-    if ( nbytes == BADSIZE )
+    if ( nbytes == BADSIZE && !is_fwdref_baseclass(udm) )
       continue; // cannot verify, the type is not ready yet
     if ( uint64(nbytes)*8 != udm.size )
     {
@@ -1403,9 +1436,10 @@ cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int
   out->create_udt(tinfo_udt, bt);
   if ( !out->calc_udt_aligns(SUDT_GAPS|SUDT_UNEX) )
   {
-#ifdef TESTABLE_BUILD
+#if defined(TESTABLE_BUILD) && !defined(__FUZZER__)
     QASSERT(30380, !inf_test_mode() && out->get_size() == BADSIZE);
 #endif
+    deb(IDA_DEBUG_DBGINFO, "PDB: Failed to calculate struct '%s' member alignments\n", udt_name != nullptr ? udt_name : "");
     ask_for_feedback("Failed to calculate struct member alignments");
   }
   return cvt_ok;
@@ -1705,8 +1739,11 @@ FAILED_ARRAY:
             enum_member_t &em = ei.push_back();
             child.get_name(&em.name);
             em.value = tb->get_variant_long_value(child);
-            if ( get_named_type(tb->ti, em.name.c_str(), NTF_SYMM, &idatype) == 1 )
+            if ( em.name.empty()
+              || get_named_type(tb->ti, em.name.c_str(), NTF_SYMM, &idatype) == 1 )
+            {
               return E_FAIL;
+            }
             return S_OK;
           }
           name_value_collector_t(const til_builder_t *_tb)
@@ -1719,8 +1756,16 @@ FAILED_ARRAY:
           nvc.ei.bte |= bte_size & BTE_SIZE_MASK;
         }
         HRESULT hr = pdb_access->iterate_children(sym, SymTagNull, nvc);
-        if ( FAILED(hr) )               // symbol already exists?
-        {                               // just reuse the existing enum
+        if ( FAILED(hr) )
+        { // symbol already exists or
+          // corrupted name or
+          // iterate_children failed to read any child
+          if ( nvc.ei.empty() || nvc.ei.back().name.empty() )
+          {
+            code = cvt_failed;
+            break;
+          }
+          // just reuse the existing enum
           if ( !out->type.deserialize(ti, &nvc.idatype) ) // this is not quite correct
             INTERR(30407);
           qstring n1;
@@ -1773,6 +1818,7 @@ cvt_code_t til_builder_t::convert_type(
     deb(IDA_DEBUG_DBGINFO, "PDB: the maximum recursion level was reached\n");
     return cvt_failed;
   }
+  ddeb(("PDEB: convert_type tag %d sym_id %d\n", tag, type));
   level++;
   typemap_t::iterator p = typemap.find(type);
   if ( p == typemap.end() )
@@ -2000,7 +2046,7 @@ HRESULT til_builder_t::handle_function_child(
 cvt_code_t til_builder_t::create_udt_ref(tinfo_t *out, pdb_udt_type_data_t *udt, int udt_kind) const
 {
   tinfo_t tif;
-  cvt_code_t code = create_udt(&tif, udt, udt_kind);
+  cvt_code_t code = create_udt(&tif, udt, udt_kind, nullptr);
   if ( code != cvt_ok )
     return code;
 
