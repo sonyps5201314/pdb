@@ -90,7 +90,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VSInstallDir)\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;__X64__;_CONSOLE;__NT__;__IDP__;MAXSTR=1024;DEBUGGER_SERVER;DEBUG_NETWORK0;__PLUGIN__;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -106,7 +106,7 @@
       <AdditionalOptions>/export:PLUGIN %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>diaguids.lib;wsock32.lib;ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>D:\Program Files\IDA Pro 7.5 SP3\plugins\pdb.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VSInstallDir)\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_32</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -119,7 +119,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VSInstallDir)\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;__X64__;_CONSOLE;__NT__;__EA64__;__IDP__;MAXSTR=1024;DEBUGGER_SERVER;DEBUG_NETWORK0;__PLUGIN__;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -135,7 +135,7 @@
       <AdditionalOptions>/export:PLUGIN %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>diaguids.lib;wsock32.lib;ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>D:\Program Files\IDA Pro 7.5 SP3\plugins\pdb64.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VSInstallDir)\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_64</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -150,7 +150,7 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VSInstallDir)\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;__X64__;_CONSOLE;__NT__;__IDP__;MAXSTR=1024;DEBUGGER_SERVER;DEBUG_NETWORK0;__PLUGIN__;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -164,7 +164,7 @@
     <Link>
       <AdditionalDependencies>diaguids.lib;wsock32.lib;ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>D:\Program Files\IDA Pro 7.5 SP3\plugins\pdb.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VSInstallDir)\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_32</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -181,7 +181,7 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VSInstallDir)\DIA SDK\include;..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;__X64__;_CONSOLE;__NT__;__EA64__;__IDP__;MAXSTR=1024;DEBUGGER_SERVER;DEBUG_NETWORK0;__PLUGIN__;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -195,7 +195,7 @@
     <Link>
       <AdditionalDependencies>diaguids.lib;wsock32.lib;ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>D:\Program Files\IDA Pro 7.5 SP3\plugins\pdb64.dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VSInstallDir)\DIA SDK\lib\amd64;..\..\lib\x64_win_vc_64</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
