@@ -1531,7 +1531,6 @@ static qstring get_msdia140_dll_path()
 	bstr_t bstrVsInstallationPath;
 	ULONGLONG ullVersion;
 	HRESULT hr = GetMaxVersionVsInstallationPath(bstrVsInstallationPath, ullVersion);
-	ASSERT(hr == S_OK);
 	if (hr == S_OK)
 	{
         //Remote Debugger目录下的msdia140.dll的版本比DIA SDK目录下的高一个修订版本号且带有symsrv.dll，
@@ -1539,8 +1538,12 @@ static qstring get_msdia140_dll_path()
         //虽然目前这个目录下的symsrv.dll版本会太低了，无法支持立刻取消下载，但是未来这个symsrv.dll的版本肯定会被升级的，
         //到时候我们就不需要自己提供更高版本的symsrv.dll文件了
 		bstrVsInstallationPath += L"\\Common7\\IDE\\Remote Debugger\\x64\\msdia140.dll";
+        return utf16_acp(bstrVsInstallationPath);
 	}
-	return utf16_acp(bstrVsInstallationPath);
+    else
+    {
+        return "";
+    }
 }
 
 //----------------------------------------------------------------------

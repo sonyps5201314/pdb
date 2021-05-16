@@ -50,7 +50,7 @@ HRESULT GetMaxVersionVsInstallationPath(bstr_t& bstrVsInstallationPath, ULONGLON
         if (REGDB_E_CLASSNOTREG == hr)
         {
             cout << "The query API is not registered. Assuming no instances are installed." << endl;
-            return 0;
+            return hr;
         }
         else if (FAILED(hr))
         {
