@@ -775,7 +775,7 @@ public:
 					  if (get_index_string)
 					  {
 						  ASSERT(sizeof(pdbargs.pdb_sign.guid) == sizeof(GUID));
-						  CHAR szIndexString[sizeof(GUID) * 2 + 1 + 1];
+						  CHAR szIndexString[sizeof(GUID) * 2 + 1 + 1 + 1];
 						  set_options(SSRVOPT_PARAMTYPE, SSRVOPT_GUIDPTR);
 						  BOOL bResult = get_index_string(pdbargs.pdb_sign.guid, pdbargs.pdb_sign.age, 0, szIndexString, _countof(szIndexString));
 						  ASSERT(bResult);
