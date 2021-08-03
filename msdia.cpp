@@ -669,8 +669,8 @@ class symsrv_cb_t
   bool wait_box_shown;
   PSYMBOLSERVERGETOPTIONDATAPROC get_option_data; // "DbgHelp.dll 10.0 or later"
   PSYMBOLSERVERSETOPTIONSPROC set_options;
-  ULONG64 old_context_data;
-  ULONG64 old_callback_data;
+  ULONG64 was_context;
+  ULONG64 was_callback;
 
 public:
   symsrv_cb_t(void)
@@ -726,8 +726,8 @@ public:
     wait_box_shown = false;
     get_option_data = NULL;
     set_options = NULL;
-    old_context_data = 0;
-    old_callback_data = 0;
+    was_context = 0;
+    was_callback = 0;
   }
 
   void init(pdbargs_t& pdbargs)
@@ -737,8 +737,8 @@ public:
       get_option_data = (PSYMBOLSERVERGETOPTIONDATAPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerGetOptionData");
       if ( get_option_data != NULL )
       {
-        get_option_data(SSRVOPT_SETCONTEXT, &old_context_data);
-        get_option_data(SSRVOPT_CALLBACK, &old_callback_data);
+        get_option_data(SSRVOPT_SETCONTEXT, &was_context);
+        get_option_data(SSRVOPT_CALLBACK, &was_callback);
       }
 
       set_options = (PSYMBOLSERVERSETOPTIONSPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerSetOptions");
@@ -981,8 +981,8 @@ public:
     {
       if ( set_options != NULL )
       {
-        set_options(SSRVOPT_SETCONTEXT, old_context_data);
-        set_options(SSRVOPT_CALLBACK, old_callback_data);
+        set_options(SSRVOPT_SETCONTEXT, was_context);
+        set_options(SSRVOPT_CALLBACK, was_callback);
       }
       FreeLibrary(symsrv_hmod);
       symsrv_hmod = NULL;
