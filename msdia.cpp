@@ -856,6 +856,7 @@ public:
 											  break;
 										  }
 									  }
+									  BOOL bDownloadPdbCompleted = FALSE;
 									  if (bResult)
 									  {
 										  DWORD dwNumberOfBytesAvailable;
@@ -937,8 +938,8 @@ public:
 																  }
 															  }
 
-                                                              if (qfileexist(local_full_path.c_str()))
-                                                              {
+															  if (qfileexist(local_full_path.c_str()))
+															  {
 																  //等待第三方下载工具写入完成，也即我们能获取到独占写入权限的时候
 																  do
 																  {
@@ -948,11 +949,13 @@ public:
 																		  qfclose(file);
 																		  file = NULL;
 
+																		  bDownloadPdbCompleted = TRUE;
+
 																		  break;
 																	  }
 																	  Sleep(50);
 																  } while (TRUE);
-                                                              }
+															  }
 														  }
 														  hide_wait_box();
 													  }
@@ -964,6 +967,10 @@ public:
 										  httpCloseHandle(hsite);
 										  hsite = NULL;
 									  }
+                                      if (bDownloadPdbCompleted)
+                                      {
+                                          break;
+                                      }
 								  }
 							  }
 						  }
