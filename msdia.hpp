@@ -37,7 +37,9 @@ private:
 
   IDiaDataSource *pSource;
   qwstring winput;
+public:
   qwstring wspath;
+private:
   enum load_data_type_t
   {
     EXE_LOCAL,
