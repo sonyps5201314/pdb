@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2005-2021 Hex-Rays SA <support@hex-rays.com>
+// Copyright (c) 2005-2022 Hex-Rays SA <support@hex-rays.com>
 // ALL RIGHTS RESERVED.
 //
 #pragma once
@@ -159,7 +159,7 @@ private:
 
   bool checked_types = false;
   bool has_sid       = false;
-  bool check_for_ids(ea_t ea, const char *name, bool has_typeinfo);
+  bool check_for_ids(ea_t ea, const char *name);
 
   void alloc_pdb_srcinfo_provider();
   void free_pdb_srcinfo_provider();

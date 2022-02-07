@@ -90,7 +90,7 @@ static bool looks_like_function_name(const char *name)
 }
 
 //----------------------------------------------------------------------
-bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
+bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name)
 {
   // Seems to be a GUID?
   const char *ptr = name;
@@ -132,16 +132,14 @@ bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
       if ( strncmp(ptr, guid, len) == 0
         && (ptr[len] == '_' || ptr[len] == ' ') ) // space can be in demangled names
       {
-        if ( has_typeinfo )
-          apply_cdecl(nullptr, ea, ids[k].type);
+        apply_cdecl(nullptr, ea, ids[k].type);
         return true;
       }
     }
   }
   if ( strncmp(name, "_guid", 5) == 0 )
   {
-    if ( has_typeinfo )
-      apply_cdecl(nullptr, ea, ids[0].type);
+    apply_cdecl(nullptr, ea, ids[0].type);
     return true;
   }
   return false;
@@ -271,7 +269,7 @@ bool pdb_ctx_t::apply_name_in_idb(ea_t ea, const qstring &name, int maybe_func, 
     // TODO: parse length?
     uint32 strtype = STRTYPE_C;
     if ( name[6] == '1' )
-      strtype = STRTYPE_C_16 | (get_utf16_encoding_idx() << 24);
+      strtype = make_str_type(STRTYPE_C_16, get_utf16_encoding_idx());
     create_strlit(ea, 0, strtype);
     return true;
   }
@@ -281,7 +279,8 @@ bool pdb_ctx_t::apply_name_in_idb(ea_t ea, const qstring &name, int maybe_func, 
   {
     if ( demangled == "`string'" )
     {
-      uint32 utf16_strtype = STRTYPE_C_16 | (get_utf16_encoding_idx() << 24);
+      int utf16_idx = get_utf16_encoding_idx();
+      uint32 utf16_strtype = make_str_type(STRTYPE_C_16, utf16_idx);
       size_t s1 = get_max_strlit_length(ea, STRTYPE_C);
       size_t s2 = get_max_strlit_length(ea, utf16_strtype);
       create_strlit(ea, 0, s1 >= s2 ? STRTYPE_C : utf16_strtype);
@@ -298,9 +297,8 @@ bool pdb_ctx_t::apply_name_in_idb(ea_t ea, const qstring &name, int maybe_func, 
   // That's why we collect names here and will rename them later.
   namelist[ea] = name;
 
-  bool has_typeinfo = ph.ti();
-  if ( check_for_ids(ea, name.c_str(), has_typeinfo)
-    || check_for_ids(ea, demangled.c_str(), has_typeinfo)
+  if ( check_for_ids(ea, name.c_str())
+    || check_for_ids(ea, demangled.c_str())
     || is_data_prefix(ea, name.c_str())
     || maybe_func < 0 )
   {
@@ -869,7 +867,6 @@ void pdb_ctx_t::init_sympaths()
   if ( full_sympath.empty() )
   {
     char cache_path[QMAXPATH];
-
     #ifdef __NT__
     if ( !GetTempPath(sizeof(cache_path), cache_path) )
       cache_path[0] = '\0';
@@ -883,7 +880,6 @@ void pdb_ctx_t::init_sympaths()
     if ( !qisdir(cache_path) && qmkdir(cache_path, 0777) != 0 )
       cache_path[0] = '\0';
     #endif
-
     full_sympath.sprnt("%s%s%s", g_spath_prefix, cache_path, g_spath_suffix);
   }
   deb(IDA_DEBUG_DBGINFO, "PDB: _NT_SYMBOL_PATH=%s\n", full_sympath.c_str());

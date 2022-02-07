@@ -671,7 +671,7 @@ cvt_code_t til_builder_t::verify_union(
     if ( s->size() == 1 && s->begin()->offset == 0 && !s->begin()->is_bitfield() )
       continue;
 #ifdef PDEB
-    msg("CREATE STEM\n");
+    msg("CREATE STEM total_size %" FMT_Z "\n", s->total_size);
     for ( pdb_udt_type_data_t::iterator p=s->begin(); p != s->end(); ++p )
       msg("  %" FMT_64 "x %s %s\n", p->offset, p->type.dstr(), p->name.c_str());
 #endif
@@ -1347,12 +1347,61 @@ inline bool is_fwdref_baseclass(pdb_udt_member_t &udm)
 }
 
 //----------------------------------------------------------------------
+// The sparsed bit field union needs to be fixed, for example:
+// 0x15e8 : LF_BITFIELD, bits = 4, starting position = 12, Type = T_ULONG(0022)
+// 0x19b8 : LF_BITFIELD, bits = 1, starting position = 11, Type = T_ULONG(0022)
+// 0x304f : LF_FIELDLIST
+//   list[0] = LF_MEMBER, public, type = 0x19B8, offset = 4, member name = 'AbsoluteAddressing'
+//   list[1] = LF_MEMBER, public, type = 0x15E8, offset = 4, member name = 'Op'
+// 0x3050 : LF_UNION
+//   # members = 2,  field list type 0x304f, SEALED, Size = 8, class name = GPUFLOW_RETURN
+// We need:
+// - add starting gap, others will be handled by SUDT_GAPS
+// - change member field type
+// - fix bit_offset
+cvt_code_t til_builder_t::fix_bit_union(pdb_udt_type_data_t *udt) const
+{
+  if ( udt->empty() )
+    return cvt_ok;
+  // interested in bitfield union only
+  for ( const pdb_udt_member_t &um : *udt )
+  {
+    if ( !um.is_bitfield() )
+      return cvt_ok;
+  }
+  // starting gap?
+  if ( udt->begin()->offset == 0 )
+    return cvt_ok;
+  // union size
+  size_t union_sz = udt->begin()->type.get_size();
+  union_sz = qmax(udt->total_size, union_sz);
+  bool is_unsigned = udt->begin()->type.is_unsigned();
+  // fill gap
+  pdb_udt_member_t gap;
+  gap.bit_offset = 0;
+  gap.offset = 0;
+  gap.size = udt->begin()->offset;
+  gap.name = "gap0";
+  // gap.type will be fixed later
+  udt->insert(udt->begin(), gap);
+  // fix member type
+  udt->total_size = union_sz;
+  for ( pdb_udt_member_t &um : *udt )
+  {
+    um.type.create_bitfield(union_sz, um.size, is_unsigned);
+    um.bit_offset = um.offset;
+  }
+  return cvt_ok;
+}
+
+//----------------------------------------------------------------------
 cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int udtKind, const char *udt_name) const
 {
   cvt_code_t code;
   if ( udtKind == UdtUnion )
   {
     udt->is_union = true;
+    fix_bit_union(udt);
     code = verify_union(udt, udt->begin(), udt->end());
   }
   else

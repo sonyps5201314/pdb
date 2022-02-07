@@ -1505,11 +1505,11 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
   if ( load_address != BADADDR )
   {
     msg("PDB: using load address %a\n", load_address);
-    pSession->put_loadAddress(load_address);
+    pSession->put_loadAddress(load_address);  //-V595 'pSession' was utilized before it was verified against nullptr
   }
 
   // Retrieve a reference to the global scope
-  hr = pSession->get_globalScope(&pGlobal); //-V595 The 'pSession' pointer was utilized before it was verified against nullptr
+  hr = pSession->get_globalScope(&pGlobal); //-V595 'pSession' was utilized before it was verified against nullptr
   if ( hr != S_OK )
     goto fail;
 
