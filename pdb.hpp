@@ -62,7 +62,7 @@ struct pdbargs_t
 
   pdbargs_t(void)
     : loaded_base(BADADDR),
-      user_data(NULL),
+      user_data(nullptr),
       flags(0)
   {}
 

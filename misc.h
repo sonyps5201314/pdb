@@ -62,20 +62,20 @@ static qstring GetFileContext(const char* pszFileName, size_t& nFileSize, const 
 	if (!lpFileBuf)
 	{
 		ASSERT(lpFileBuf);
-		return NULL;
+		return nullptr;
 	}
 	FILE* f = qfopen(pszFileName, pszMode);
 	if (!f)
 	{
 		ASSERT(f);
-		return NULL;
+		return nullptr;
 	}
 	nFileSize = qfread(f, lpFileBuf, sizeof(uchar) * nFileSize);
 	qfclose(f);
 
 	qstring result((const char*)lpFileBuf, nFileSize);
 	qfree(lpFileBuf);
-	lpFileBuf = NULL;
+	lpFileBuf = nullptr;
 	return result;
 }
 

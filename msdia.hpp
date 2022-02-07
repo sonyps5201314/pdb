@@ -13,10 +13,10 @@ struct pdb_session_t
   local_pdb_access_t *pdb_access;
 
   pdb_session_t()
-    : dia_hmod(NULL),
+    : dia_hmod(nullptr),
       refcount(1),
-      pdb_access(NULL),
-      pSource(NULL)
+      pdb_access(nullptr),
+      pSource(nullptr)
   {
     session_count++;
   }
@@ -70,15 +70,15 @@ class pdb_session_ref_t
 public:
   pdb_session_t *session;  // refcounted object
 
-  pdb_session_ref_t(void) : session(NULL) {}
+  pdb_session_ref_t(void) : session(nullptr) {}
   pdb_session_ref_t(const pdb_session_ref_t &r);
   ~pdb_session_ref_t();
 
   pdb_session_ref_t &operator=(const pdb_session_ref_t &r);
   void create_session();
   void close();
-  bool empty() const { return session == NULL; }
-  bool opened() const { return !empty() && session->pdb_access != NULL; }
+  bool empty() const { return session == nullptr; }
+  bool opened() const { return !empty() && session->pdb_access != nullptr; }
   HRESULT open_session(pdbargs_t &args);
 };
 

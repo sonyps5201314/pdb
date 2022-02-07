@@ -30,7 +30,7 @@ void til_builder_t::remove_anonymous_namespaces(qstring &buf)
   while ( true )
   {             // 1234567890
     p = strstr(p, "`anonymous");
-    if ( p == NULL )
+    if ( p == nullptr )
       break;
     const char *q = p + 10;
     if ( *q != '-' && *q != ' ' )
@@ -70,7 +70,7 @@ bool til_builder_t::get_symbol_name(pdb_sym_t &sym, qstring &buf)
     {
       //             012345678
       p = strstr(p, "<unnamed");
-      if ( p == NULL )
+      if ( p == nullptr )
         break;
       if ( p == buf.begin() )
         is_unnamed = true;
@@ -92,7 +92,7 @@ bool til_builder_t::get_symbol_name(pdb_sym_t &sym, qstring &buf)
     if ( !is_unnamed )
     {
       const char *marker = strstr(buf.begin(), "__unnamed");
-      if ( marker != NULL
+      if ( marker != nullptr
         // Is prev char not a valid identifier char?
         && (marker == buf.begin() || !ident_char(marker[-1]))
         // Is next char not a valid identifier char?
@@ -119,11 +119,11 @@ bool til_builder_t::get_symbol_type(tpinfo_t *out, pdb_sym_t &sym, int *p_id)
 #endif
   pdb_sym_t *pType = pdb_access->create_sym();
   pdb_sym_janitor_t janitor_pType(pType);
-  if ( p_id != NULL )
+  if ( p_id != nullptr )
     *p_id = -1;
   if ( sym.get_type(pType) != S_OK )
     return false;
-  bool ok = retrieve_type(out, *pType, NULL, p_id);
+  bool ok = retrieve_type(out, *pType, nullptr, p_id);
 #ifdef PDEBSYM
   DWORD typsym_id = 0;
   pType->get_symIndexId(&typsym_id);
@@ -160,7 +160,7 @@ cvt_code_t til_builder_t::convert_basetype(
         int size) const
 {
   type_t bt = BTF_TYPEDEF;
-  const char *name = NULL;
+  const char *name = nullptr;
   switch ( baseType )
   {
     case btNoType:
@@ -252,7 +252,7 @@ MAKE_INT:
     case btComplex:  name = "complex";                         break;
     case btDate:     name = "DATE";                            break;
   }
-  if ( name != NULL )
+  if ( name != nullptr )
   {
     out->type.create_typedef(ti, name);
     return cvt_typedef;
@@ -286,7 +286,7 @@ bool til_builder_t::retrieve_arguments(
         return S_OK;
       }
       tpinfo_t tpi;
-      bool cvt_succeeded = tb->retrieve_type(&tpi, sym, parent, NULL);
+      bool cvt_succeeded = tb->retrieve_type(&tpi, sym, parent, nullptr);
       if ( cvt_succeeded || tpi.is_notype )
       {
         funcarg_t &arg = fi.push_back();
@@ -301,7 +301,7 @@ bool til_builder_t::retrieve_arguments(
   fi.clear();
   type_name_collector_t pp(ti, this, fi);
   HRESULT hr = pdb_access->iterate_children(_sym, SymTagNull, pp);
-  if ( hr == S_OK && funcSym != NULL )
+  if ( hr == S_OK && funcSym != nullptr )
   {
     // get parameter names from the function symbol
     func_type_data_t args;
@@ -452,13 +452,13 @@ bool til_builder_t::is_member_func(tinfo_t *class_type, pdb_sym_t &typeSym, pdb_
     return false;
 
   tpinfo_t tpi;
-  if ( !retrieve_type(&tpi, *pParent, NULL, NULL) )
+  if ( !retrieve_type(&tpi, *pParent, nullptr, nullptr) )
     return false; // failed to retrieve the parent's type
 
   class_type->swap(tpi.type);
 
   // then check if it's static
-  if ( funcSym != NULL
+  if ( funcSym != nullptr
     && pdb_access->get_dia_version() >= 800 )
   {
     BOOL bIsStatic = false;
@@ -515,7 +515,7 @@ int til_builder_t::get_symbol_funcarg_info(
 {
   sym.get_name(&out->name);
   tpinfo_t tpi;
-  get_symbol_type(&tpi, sym, NULL);
+  get_symbol_type(&tpi, sym, nullptr);
   out->type = tpi.type;
   if ( locType == LocIsEnregistered )
   {
@@ -625,7 +625,7 @@ cvt_code_t til_builder_t::verify_union(
   stems_t stems; // each stem is a member of the future union
   for ( pdb_udt_type_data_t::iterator q=p1; q != p2; ++q )
   {
-    pdb_udt_type_data_t *best = NULL;
+    pdb_udt_type_data_t *best = nullptr;
     q->offset -= off;
     if ( q->offset != 0 )
     { // find best suited stem: the one with end() closest to our offset
@@ -637,14 +637,14 @@ cvt_code_t til_builder_t::verify_union(
         uint64 smend = lastmem.end();
         if ( (lastmem.is_bitfield() == q->is_bitfield() || q->bit_offset == 0)
           && smend <= q->begin()
-          && (best == NULL || bestend < smend) )
+          && (best == nullptr || bestend < smend) )
         {
           best = &sm;
           bestend = smend;
         }
       }
     }
-    if ( best == NULL )
+    if ( best == nullptr )
       best = &stems.push_back();
     uint64 qend;
     if ( q->is_bitfield() )
@@ -727,7 +727,7 @@ cvt_code_t til_builder_t::create_union(
     if ( nbytes > unimems.total_size )
       unimems.total_size = nbytes;
   }
-  if ( p_total_size != NULL )
+  if ( p_total_size != nullptr )
     *p_total_size = unimems.total_size;
   return create_udt_ref(out, &unimems, UdtUnion);
 }
@@ -911,7 +911,7 @@ cvt_code_t til_builder_t::make_vtable_struct(tinfo_t *out, pdb_sym_t &_sym)
       bool is_intro_virtual = get_vfptr_offset(&vfptr_offset, sym);
 
       tpinfo_t tpi;
-      if ( is_intro_virtual && tb->retrieve_type(&tpi, sym, parent, NULL) )
+      if ( is_intro_virtual && tb->retrieve_type(&tpi, sym, parent, nullptr) )
       {
         ddeb(("PDEB:   make_vtable_struct add '%s' vptr offset %u\n", tpi.type.dstr(), vfptr_offset));
         add_vftable_member(&vftinfo->udt, tpi.type, name.c_str(), vfptr_offset);
@@ -992,7 +992,7 @@ cvt_code_t til_builder_t::convert_udt(
       // assert: intro virtual or data member
 
       tpinfo_t tpi;
-      if ( !tb->retrieve_type(&tpi, sym, parent, NULL) )
+      if ( !tb->retrieve_type(&tpi, sym, parent, nullptr) )
         return S_OK;
 
       if ( is_intro_virtual )
@@ -1374,7 +1374,7 @@ cvt_code_t til_builder_t::create_udt(tinfo_t *out, pdb_udt_type_data_t *udt, int
     if ( udm.is_bitfield() )
       continue;
     int gts_code = GTS_NESTED | (udm.is_baseclass() ? GTS_BASECLASS : 0);
-    size_t nbytes = udm.type.get_size(NULL, gts_code);
+    size_t nbytes = udm.type.get_size(nullptr, gts_code);
     if ( nbytes == BADSIZE && !is_fwdref_baseclass(udm) )
       continue; // cannot verify, the type is not ready yet
     if ( uint64(nbytes)*8 != udm.size )
@@ -1556,7 +1556,7 @@ cvt_code_t til_builder_t::really_convert_type(
     case SymTagPointerType:
       {
         tpinfo_t obj;
-        if ( !get_symbol_type(&obj, sym, NULL) )
+        if ( !get_symbol_type(&obj, sym, nullptr) )
         {
           code = cvt_failed;
           break;
@@ -1591,7 +1591,7 @@ cvt_code_t til_builder_t::really_convert_type(
     case SymTagArrayType:
       {
         tpinfo_t el;
-        if ( !get_symbol_type(&el, sym, NULL) )
+        if ( !get_symbol_type(&el, sym, nullptr) )
         {
 FAILED_ARRAY:
           code = cvt_failed;
@@ -1608,7 +1608,7 @@ FAILED_ARRAY:
     case SymTagFunctionType:
       {
         tpinfo_t itp2;
-        if ( !get_symbol_type(&itp2, sym, NULL) ) // return type
+        if ( !get_symbol_type(&itp2, sym, nullptr) ) // return type
         {
           code = cvt_failed;
           break;
@@ -1670,7 +1670,7 @@ FAILED_ARRAY:
             // for the get_isStatic() request (S_FALSE).
             // So we need to check does 'this' pointer present in the function parameters.
             bool add_this = true;
-            if ( parent != NULL )
+            if ( parent != nullptr )
             {
               this_seeker_t ts(this);
               pdb_access->iterate_children(*parent, SymTagData, ts);
@@ -1747,7 +1747,7 @@ FAILED_ARRAY:
             return S_OK;
           }
           name_value_collector_t(const til_builder_t *_tb)
-            : tb(_tb), idatype(NULL) {}
+            : tb(_tb), idatype(nullptr) {}
         };
         name_value_collector_t nvc(this);
         if ( size != 0 && size <= 64 )
@@ -1788,14 +1788,14 @@ FAILED_ARRAY:
     case SymTagFunctionArgType:
     case SymTagFunction:
     case SymTagData:
-      if ( !get_symbol_type(out, sym, NULL) )
+      if ( !get_symbol_type(out, sym, nullptr) )
         code = cvt_failed;
       else if ( out->type.is_decl_typedef() )
         code = cvt_typedef; // signal that this is a typedef
       break;
 
     case SymTagVTable:
-      if ( parent == NULL || make_vtable_struct(&out->type, *parent) != cvt_ok )
+      if ( parent == nullptr || make_vtable_struct(&out->type, *parent) != cvt_ok )
         out->type.create_typedef(ti, fake_vtable_type);
       break;
   }
@@ -2061,7 +2061,7 @@ cvt_code_t til_builder_t::create_udt_ref(tinfo_t *out, pdb_udt_type_data_t *udt,
     id = alloc_type_ordinal(ti);
     if ( set_numbered_type(ti, id, NTF_NOBASE|NTF_FIXNAME, name.c_str(), type.begin(), fields.begin()) != TERR_OK )
       return cvt_failed;
-    type_created(BADADDR, id, NULL, tif);
+    type_created(BADADDR, id, nullptr, tif);
   }
 
   out->create_typedef(ti, id);
@@ -2075,7 +2075,7 @@ bool til_builder_t::retrieve_type(
         pdb_sym_t *parent,
         int *p_id)
 {
-  if ( p_id != NULL )
+  if ( p_id != nullptr )
     *p_id = -1;
 
   // id -> unknown typedef?
@@ -2100,7 +2100,7 @@ bool til_builder_t::retrieve_type(
   bool id_set = false;
   if ( tag == SymTagVTable && ns.empty() )
   {
-    if ( parent != NULL )
+    if ( parent != nullptr )
       get_symbol_name(*parent, ns);
     LONG offset = 0;
     sym.get_offset(&offset);
@@ -2195,7 +2195,7 @@ RETT2:
         if ( defined_wrongly )
           ntf_flags |= NTF_REPLACE;
         if ( set_numbered_type(ti, id, ntf_flags,
-                               ns.empty() ? NULL : ns.c_str(),
+                               ns.empty() ? nullptr : ns.c_str(),
                                type.begin(),
                                fields.begin()) != TERR_OK )
         {
@@ -2206,14 +2206,14 @@ RETT2:
       if ( is_unnamed )
         unnamed_types.insert(id);
       // msg("%d: %s\n  name: %s\n", id, tpi2.dstr(), ns.c_str());
-      type_created(BADADDR, id, NULL, tpi2.type);
+      type_created(BADADDR, id, nullptr, tpi2.type);
     }
     else
     { // in case of recursive call we need to preserve modifiers
       tif_mod = get_sym_modifiers(sym);
     }
   }
-  if ( p_id != NULL )
+  if ( p_id != nullptr )
     *p_id = id;
   out->type.create_typedef(ti, id);
   if ( tif_mod != 0 )
@@ -2361,7 +2361,7 @@ HRESULT til_builder_t::handle_types(pdb_sym_t &global_sym)
     virtual HRESULT do_visit_child(pdb_sym_t &sym) override
     {
       tpinfo_t tpi;
-      if ( tb->retrieve_type(&tpi, sym, parent, NULL) )
+      if ( tb->retrieve_type(&tpi, sym, parent, nullptr) )
         counter++;
       return S_OK;
     }

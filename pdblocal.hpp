@@ -22,7 +22,7 @@ public:
 
   virtual ~local_pdb_access_t()
   {
-#define RELEASE(thing) do { if ( thing != NULL ) { (thing)->Release(); thing = NULL; } } while ( false )
+#define RELEASE(thing) do { if ( thing != nullptr ) { (thing)->Release(); thing = nullptr; } } while ( false )
     RELEASE(dia_global);
     RELEASE(dia_session);
     RELEASE(dia_source);

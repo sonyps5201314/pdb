@@ -22,13 +22,13 @@ typedef BOOL IMAGEAPI SymEnumSymbols_t(IN HANDLE hProcess, IN ULONG64 BaseOfDll,
 typedef BOOL IMAGEAPI SymUnloadModule64_t(IN HANDLE hProcess, IN DWORD64 BaseOfDll);
 typedef BOOL IMAGEAPI SymCleanup_t(IN HANDLE hProcess);
 
-static HINSTANCE dbghelp = NULL;
-static SymSetOptions_t     *pSymSetOptions     = NULL;
-static SymInitialize_t     *pSymInitialize     = NULL;
-static SymLoadModule64_t   *pSymLoadModule64   = NULL;
-static SymEnumSymbols_t    *pSymEnumSymbols    = NULL;
-static SymUnloadModule64_t *pSymUnloadModule64 = NULL;
-static SymCleanup_t        *pSymCleanup        = NULL;
+static HINSTANCE dbghelp = nullptr;
+static SymSetOptions_t     *pSymSetOptions     = nullptr;
+static SymInitialize_t     *pSymInitialize     = nullptr;
+static SymLoadModule64_t   *pSymLoadModule64   = nullptr;
+static SymEnumSymbols_t    *pSymEnumSymbols    = nullptr;
+static SymUnloadModule64_t *pSymUnloadModule64 = nullptr;
+static SymCleanup_t        *pSymCleanup        = nullptr;
 static int symbols_found = 0;
 
 //----------------------------------------------------------------------
@@ -42,7 +42,7 @@ static bool setup_pointers(bool *must_free)
   dbghelp = GetModuleHandle("dbghelp.dll");
 
   *must_free = false;
-  if ( dbghelp == NULL )
+  if ( dbghelp == nullptr )
   {
     // nope, load it
     // use search_path to avoid dll current directory attacks
@@ -52,7 +52,7 @@ static bool setup_pointers(bool *must_free)
     *must_free = true;
   }
 
-  if ( dbghelp == NULL )
+  if ( dbghelp == nullptr )
   {
     deb(IDA_DEBUG_DBGINFO, "PDB plugin: failed to load DBGHELP.DLL");
   }
@@ -65,21 +65,21 @@ static bool setup_pointers(bool *must_free)
     *(FARPROC*)&pSymUnloadModule64 = GetProcAddress(dbghelp, "SymUnloadModule64");
     *(FARPROC*)&pSymCleanup        = GetProcAddress(dbghelp, "SymCleanup");
 
-    if ( pSymSetOptions     != NULL
-      && pSymInitialize     != NULL
-      && pSymLoadModule64   != NULL
-      && pSymUnloadModule64 != NULL
-      && pSymCleanup        != NULL
-      && pSymEnumSymbols    != NULL ) // required XP or higher
+    if ( pSymSetOptions     != nullptr
+      && pSymInitialize     != nullptr
+      && pSymLoadModule64   != nullptr
+      && pSymUnloadModule64 != nullptr
+      && pSymCleanup        != nullptr
+      && pSymEnumSymbols    != nullptr ) // required XP or higher
     {
       return true;
     }
   }
   deb(IDA_DEBUG_DBGINFO, "PDB plugin: Essential DBGHELP.DLL functions are missing\n");
-  if ( dbghelp != NULL )
+  if ( dbghelp != nullptr )
   {
     FreeLibrary(dbghelp);
-    dbghelp = NULL;
+    dbghelp = nullptr;
   }
   return false;
 }
@@ -175,14 +175,14 @@ bool old_pdb_plugin(ea_t loaded_base, const char *input, const char *spath)
     }
     else
     {
-      DWORD64 symbase = pSymLoadModule64(fake_proc, 0, (char*)input, NULL, loaded_base, 0);
+      DWORD64 symbase = pSymLoadModule64(fake_proc, 0, (char*)input, nullptr, loaded_base, 0);
       if ( symbase != 0 )
       {
         load_vc_til();
 
         symbols_found = 0;
         adiff_t delta = adiff_t(loaded_base - symbase);
-        ok = pSymEnumSymbols(fake_proc, symbase, NULL, EnumerateSymbolsProc, &delta)
+        ok = pSymEnumSymbols(fake_proc, symbase, nullptr, EnumerateSymbolsProc, &delta)
           && symbols_found > 0;
         if ( !ok )
           error_msg("EnumSymbols");
@@ -195,7 +195,7 @@ bool old_pdb_plugin(ea_t loaded_base, const char *input, const char *spath)
     if ( must_free )
     {
       FreeLibrary(dbghelp);
-      dbghelp = NULL;
+      dbghelp = nullptr;
     }
   }
   return ok;

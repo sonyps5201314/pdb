@@ -69,7 +69,7 @@ HRESULT GetMaxVersionVsInstallationPath(bstr_t& bstrVsInstallationPath, ULONGLON
         ISetupHelperPtr helper(query);
 
         ISetupInstance* pInstances[1] = {};
-        hr = e->Next(1, pInstances, NULL);
+        hr = e->Next(1, pInstances, nullptr);
         while (S_OK == hr)
         {
             // Wrap instance without AddRef'ing.
@@ -77,7 +77,7 @@ HRESULT GetMaxVersionVsInstallationPath(bstr_t& bstrVsInstallationPath, ULONGLON
             PrintInstance(instance, helper, MaxVsInstanceVersion);
 			SetupInstances.push_back(instance);
 
-            hr = e->Next(1, pInstances, NULL);
+            hr = e->Next(1, pInstances, nullptr);
         }
 
         if (FAILED(hr))
@@ -202,7 +202,7 @@ void PrintInstance(
 
         //wcout << endl;
 
-        LPSAFEARRAY psa = NULL;
+        LPSAFEARRAY psa = nullptr;
         if (FAILED(hr = instance->GetPackages(&psa)))
         {
             throw win32_exception(hr, "failed to get Packages");
@@ -275,7 +275,7 @@ void PrintProperties(
 )
 {
     HRESULT hr = S_OK;
-    LPSAFEARRAY psaNames = NULL;
+    LPSAFEARRAY psaNames = nullptr;
 
     if (FAILED(hr = pStore->GetNames(&psaNames)))
     {

@@ -71,7 +71,7 @@ class CoInitializer
 public:
     CoInitializer()
     {
-        hr = ::CoInitialize(NULL);
+        hr = ::CoInitialize(nullptr);
         if (FAILED(hr))
         {
             throw win32_exception(hr, "failed to initialize COM");

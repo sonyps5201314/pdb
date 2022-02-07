@@ -138,7 +138,7 @@ bool varser_t::deserialize(VARIANT &var, const uchar **in, const uchar *const en
         uint32 nbytes = bcnt + 4 + 2; // +2 for terminating null character
         QASSERT(30472, nbytes > bcnt); // check for integer overflow
         uint8 *raw = (uint8 *)qalloc(nbytes);
-        if ( raw != NULL )
+        if ( raw != nullptr )
         {
           *(uint32*)raw = bcnt;
           raw += 4;

@@ -24,7 +24,7 @@
 #ifdef __IS_MSDIA100_OR_GREATER__
 __if_not_exists(IDiaSession::findChildrenEx)
 {
-    static int temp_result_for__IS_MSDIA100_OR_GREATER__ = _CrtDbgReportW(_CRT_ASSERT, _CRT_WIDE(__FILE__), __LINE__, NULL, L"%ls", L"PLEASE undefine __IS_MSDIA100_OR_GREATER__");
+    static int temp_result_for__IS_MSDIA100_OR_GREATER__ = _CrtDbgReportW(_CRT_ASSERT, _CRT_WIDE(__FILE__), __LINE__, nullptr, L"%ls", L"PLEASE undefine __IS_MSDIA100_OR_GREATER__");
 }
 #endif
 
@@ -35,7 +35,7 @@ bool pdb_session_t::co_initialized = false;
 
 #ifndef _INC_SHLWAPI
 typedef BOOL (__stdcall *PathIsUNC_t)(LPCTSTR pszPath);
-static PathIsUNC_t PathIsUNC = NULL;
+static PathIsUNC_t PathIsUNC = nullptr;
 #endif
 
 static bool check_for_odd_paths(const char *fname);
@@ -74,10 +74,10 @@ public:
       FileName,
       GENERIC_READ,
       FILE_SHARE_READ | FILE_SHARE_WRITE,
-      NULL,
+      nullptr,
       OPEN_EXISTING,
       0,
-      NULL);
+      nullptr);
     return hFile != INVALID_HANDLE_VALUE;
   }
 
@@ -88,10 +88,10 @@ public:
 
     LARGE_INTEGER pos;
     pos.QuadPart = (LONGLONG) offset;
-    if ( SetFilePointerEx(hFile, pos, NULL, FILE_BEGIN) == 0 )
+    if ( SetFilePointerEx(hFile, pos, nullptr, FILE_BEGIN) == 0 )
       return false;
 
-    if ( ReadFile(hFile, buf, count, (DWORD *) nread, NULL) == 0 )
+    if ( ReadFile(hFile, buf, count, (DWORD *) nread, nullptr) == 0 )
       return false;
 
     return true;
@@ -177,10 +177,10 @@ public:
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID rid, void **ppUnk)
   {
-    if ( ppUnk == NULL )
+    if ( ppUnk == nullptr )
       return E_INVALIDARG;
 
-    *ppUnk = NULL;
+    *ppUnk = nullptr;
     if ( rid == __uuidof(IDiaLoadCallback2) || rid == __uuidof(IDiaLoadCallback) )
     {
       *ppUnk = (IDiaLoadCallback2 *)this;
@@ -202,7 +202,7 @@ public:
     {
       *ppUnk = (IUnknown *)(IDiaLoadCallback *)this;
     }
-    if ( *ppUnk == NULL )
+    if ( *ppUnk == nullptr )
       return E_NOINTERFACE;
     AddRef();
     return S_OK;
@@ -449,12 +449,12 @@ HRESULT __stdcall CoCreateInstanceNoReg(
   do
   {
     hDll = LoadLibrary(szDllName);
-    if ( hDll == NULL )
+    if ( hDll == nullptr )
       break;
 
     HRESULT (__stdcall *GetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);
     *(FARPROC*)&GetClassObject = GetProcAddress(hDll, "DllGetClassObject");
-    if ( GetClassObject == NULL )
+    if ( GetClassObject == nullptr )
       break;
 
     IClassFactory *pIFactory;
@@ -467,7 +467,7 @@ HRESULT __stdcall CoCreateInstanceNoReg(
   }
   while ( false );
 
-  if ( FAILED(hr) && hDll != NULL )
+  if ( FAILED(hr) && hDll != nullptr )
     FreeLibrary(hDll);
   else
     *phMod = hDll;
@@ -528,16 +528,16 @@ pdb_session_t::~pdb_session_t()
 //----------------------------------------------------------------------
 void pdb_session_t::close()
 {
-  if ( pdb_access != NULL )
+  if ( pdb_access != nullptr )
   {
     delete pdb_access;
-    pdb_access = NULL;
+    pdb_access = nullptr;
   }
 
-  if ( dia_hmod != NULL )
+  if ( dia_hmod != nullptr )
   {
     FreeLibrary(dia_hmod);
-    dia_hmod = NULL;
+    dia_hmod = nullptr;
   }
 
 #ifdef _DEBUG
@@ -598,7 +598,7 @@ static int GetDownloadPercentFromSymbolServerMessage(CString& Src)
 		if (Src.Find("percent") != -1)
 		{
 			Src.TrimLeft('\b');
-			char* EndPtr = NULL;
+			char* EndPtr = nullptr;
 			result = strtol(Src, &EndPtr, 10);
 		}
 	}
@@ -640,7 +640,7 @@ static BOOL CALLBACK SymbolServerCallback(
     case SSRVACTION_EVENT:
       IMAGEHLP_CBA_EVENT *pev = (IMAGEHLP_CBA_EVENT*)data;
       // Event information is usually all zero.
-      if ( pev->severity != 0 || pev->code != 0 || pev->object != NULL )
+      if ( pev->severity != 0 || pev->code != 0 || pev->object != nullptr )
         deb(IDA_DEBUG_DEBUGGER, "SYMSRV: event severity: %d code: %d object: %p\n", pev->severity, pev->code, pev->object);
 	  CString strText;
 	  if (IS_INTRESOURCE(pev->desc))
@@ -709,17 +709,17 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 							qvector<qstring> cache_paths;
 							qvector<qstring> srvs;
 
-							LPSTR next_token = NULL;
+							LPSTR next_token = nullptr;
 							LPSTR token = qstrtok(spath.begin(), ";", &next_token);
-							while (token != NULL)
+							while (token != nullptr)
 							{
 								qstring item(token);
-								LPSTR next_token_item = NULL;
+								LPSTR next_token_item = nullptr;
 								LPTSTR spath_prefix = qstrtok(item.begin(), "*", &next_token_item);
 								ASSERT(spath_prefix);
 								if (!strnicmp(spath_prefix, "srv", _countof("srv") - 1))
 								{
-									LPTSTR cache_path = qstrtok(NULL, "*", &next_token_item);
+									LPTSTR cache_path = qstrtok(nullptr, "*", &next_token_item);
 									ASSERT(cache_path);
 									if (cache_path)
 									{
@@ -731,7 +731,7 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 											break;
 										}
 										cache_paths.push_back(cache_path);
-										LPTSTR srv = qstrtok(NULL, "*", &next_token_item);
+										LPTSTR srv = qstrtok(nullptr, "*", &next_token_item);
 										if (srv)
 										{
 											srvs.push_back(srv);
@@ -750,7 +750,7 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 								}
 
 								// Get next token: 
-								token = qstrtok(NULL, ";", &next_token);
+								token = qstrtok(nullptr, ";", &next_token);
 							}
 
 							if (!bFindCache)
@@ -844,7 +844,7 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 																	int exit_code = 0;
 																	if (check_process_exit(handle, &exit_code, 50) == 0)
 																	{
-																		handle = NULL;
+																		handle = nullptr;
 																	}
 																}
 																else
@@ -866,7 +866,7 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 																	if (file)
 																	{
 																		qfclose(file);
-																		file = NULL;
+																		file = nullptr;
 
 																		bDownloadPdbCompleted = TRUE;
 
@@ -882,9 +882,9 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 											}
 										}
 										httpCloseHandle(hfile);
-										hfile = NULL;
+										hfile = nullptr;
 										httpCloseHandle(hsite);
-										hsite = NULL;
+										hsite = nullptr;
 									}
 									if (bDownloadPdbCompleted)
 									{
@@ -927,10 +927,10 @@ public:
 		//https://stackoverflow.com/questions/940707/how-do-i-programmatically-get-the-version-of-a-dll-or-exe-file
 		DWORD  verHandle = 0;
 		UINT   size = 0;
-		LPBYTE lpBuffer = NULL;
+		LPBYTE lpBuffer = nullptr;
 		DWORD  verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
 
-		if (verSize != NULL)
+		if (verSize != 0)
 		{
 			BYTE* verData = new BYTE[verSize];
 
@@ -958,29 +958,29 @@ public:
 				}
 			}
 			delete[] verData;
-			verData = NULL;
+			verData = nullptr;
 		}
 	}
     wait_box_shown = false;
-    get_option_data = NULL;
-    set_options = NULL;
+    get_option_data = nullptr;
+    set_options = nullptr;
     was_context = 0;
     was_callback = 0;
   }
 
   void init(void)
   {
-    if ( symsrv_hmod != NULL )
+    if ( symsrv_hmod != nullptr )
     {
       get_option_data = (PSYMBOLSERVERGETOPTIONDATAPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerGetOptionData");
-      if ( get_option_data != NULL )
+      if ( get_option_data != nullptr )
       {
         get_option_data(SSRVOPT_SETCONTEXT, &was_context);
         get_option_data(SSRVOPT_CALLBACK, &was_callback);
       }
 
       set_options = (PSYMBOLSERVERSETOPTIONSPROC)(void *)GetProcAddress(symsrv_hmod, "SymbolServerSetOptions");
-      if ( set_options != NULL )
+      if ( set_options != nullptr )
       {
         set_options(SSRVOPT_SETCONTEXT, (ULONG64) (intptr_t) &wait_box_shown);
         set_options(SSRVOPT_CALLBACK, (ULONG64) SymbolServerCallback);
@@ -994,15 +994,15 @@ public:
 
   void term(void)
   {
-    if ( symsrv_hmod != NULL )
+    if ( symsrv_hmod != nullptr )
     {
-      if ( set_options != NULL )
+      if ( set_options != nullptr )
       {
         set_options(SSRVOPT_SETCONTEXT, was_context);
         set_options(SSRVOPT_CALLBACK, was_callback);
       }
       FreeLibrary(symsrv_hmod);
-      symsrv_hmod = NULL;
+      symsrv_hmod = nullptr;
       if ( wait_box_shown )
         hide_wait_box();
     }
@@ -1013,11 +1013,11 @@ public:
 static qstring print_guid(GUID *guid)
 {
   qstring guid_str;
-  if ( guid != NULL )
+  if ( guid != nullptr )
   {
-    OLECHAR *guid_wstr = NULL;
+    OLECHAR *guid_wstr = nullptr;
     StringFromCLSID(*guid, &guid_wstr);
-    if ( guid_wstr != NULL )
+    if ( guid_wstr != nullptr )
     {
       utf16_utf8(&guid_str, guid_wstr);
       CoTaskMemFree(guid_wstr);
@@ -1040,7 +1040,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
   {
     uint32 sig = pdb_sign.sig;
     uint32 age = pdb_sign.age;
-    GUID *pcsig70 = NULL;
+    GUID *pcsig70 = nullptr;
     for ( int i=0; i < qnumber(pdb_sign.guid); i++ )
     {
       if ( pdb_sign.guid[i] != 0 )
@@ -1049,7 +1049,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
         break;
       }
     }
-    if ( sig == 0 && age == 0 && pcsig70 == NULL )
+    if ( sig == 0 && age == 0 && pcsig70 == nullptr )
       return E_FAIL;
     qstring guid_str = print_guid(pcsig70);
     deb(IDA_DEBUG_DEBUGGER, "PDB: Trying to load PDB \"%S\" (guid %s, sig 0x%08X, age 0x%08X)\n", pdb_path, guid_str.c_str(), sig, age);
@@ -1072,16 +1072,16 @@ HRESULT pdb_session_t::check_and_load_pdb(
   pdbargs.flags &= ~PDBFLG_IS_MINIPDB;
   if (hr == S_OK)
   {
-	  IDiaSession* pDiaSession = NULL;
+	  IDiaSession* pDiaSession = nullptr;
 	  HRESULT hr = pSource->openSession(&pDiaSession);
 
 	  ASSERT(hr == S_OK);
 	  if (hr == S_OK)
 	  {
-		  IDiaSession10* pIDiaSession10 = NULL;
+		  IDiaSession10* pIDiaSession10 = nullptr;
 		  hr = pDiaSession->QueryInterface(IID_IDiaSession10, (void **)&pIDiaSession10);
 		  pDiaSession->Release();
-		  pDiaSession = NULL;
+		  pDiaSession = nullptr;
 
 		  //ASSERT(hr == S_OK);
 		  if (hr == S_OK)
@@ -1089,7 +1089,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 			  BOOL fMinimalDbgInfo = FALSE;
 			  hr = pIDiaSession10->isMiniPDB(&fMinimalDbgInfo);
 			  pIDiaSession10->Release();
-			  pIDiaSession10 = NULL;
+			  pIDiaSession10 = nullptr;
 
 			  ASSERT(hr == S_OK);
 			  if (hr == S_OK)
@@ -1194,7 +1194,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 								  {
 									  int exit_code = 0;
 									  check_process_exit(handle, &exit_code);
-									  handle = NULL;
+									  handle = nullptr;
 
 									  if (bUseVs2015MsPdbCmf)
 									  {
@@ -1221,7 +1221,7 @@ HRESULT pdb_session_t::check_and_load_pdb(
 							  if (bConverted)
 							  {
 								  pSource->Release();
-								  pSource = NULL;
+								  pSource = nullptr;
 
 								  int dia_version;
 								  hr = create_dia_source(&dia_version);
@@ -1261,11 +1261,11 @@ HRESULT pdb_session_t::check_and_load_pdb(
 // warn the user about eventual UNC or other problematic paths
 static bool check_for_odd_paths(const char *fname)
 {
-  if ( PathIsUNC == NULL )
+  if ( PathIsUNC == nullptr )
   {
 #ifndef _INC_SHLWAPI
     HMODULE h = GetModuleHandle("shlwapi.dll");
-    if ( h != NULL )
+    if ( h != nullptr )
       PathIsUNC = (PathIsUNC_t)(void*)GetProcAddress(h, "PathIsUNCA");
 #else
 	ASSERT(FALSE);
@@ -1273,7 +1273,7 @@ static bool check_for_odd_paths(const char *fname)
   }
   if ( fname[0] == '\\'
     || fname[0] == '/'
-    || PathIsUNC != NULL && PathIsUNC(fname) )
+    || PathIsUNC != nullptr && PathIsUNC(fname) )
   {
     if ( ask_yn(ASKBTN_NO,
                 "AUTOHIDE NONE\nHIDECANCEL\n"
@@ -1302,7 +1302,7 @@ HRESULT pdb_session_t::load_data_for_exe(
       return E_FAIL;
   }
 
-  msdia_reader_t *msdia_reader = NULL;
+  msdia_reader_t *msdia_reader = nullptr;
   HRESULT hr = E_FAIL;
   switch ( type )
   {
@@ -1409,21 +1409,21 @@ HRESULT pdb_session_t::load_input_path(
 HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 {
   // Already open?
-  if ( pdb_access != NULL )
+  if ( pdb_access != nullptr )
     return S_OK;
 
   // Not initialized yet?
   if ( !co_initialized )
   {
     // Initialize COM
-    CoInitialize(NULL);
+    CoInitialize(nullptr);
     co_initialized = true;
   }
 
   int dia_version;
   HRESULT hr;
-  IDiaSession    *pSession = NULL;
-  IDiaSymbol     *pGlobal  = NULL;
+  IDiaSession    *pSession = nullptr;
+  IDiaSymbol     *pGlobal  = nullptr;
   bool pdb_loaded = false;
 
   // No interface was created?
@@ -1531,13 +1531,13 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 
 fail:
   // In the event of an error, this will be reached.
-  if ( pdb_access == NULL )
+  if ( pdb_access == nullptr )
   {
-    if ( pGlobal != NULL )
+    if ( pGlobal != nullptr )
       pGlobal->Release();
-    if ( pSession != NULL )
+    if ( pSession != nullptr )
       pSession->Release();
-    if ( pSource != NULL )
+    if ( pSource != nullptr )
       pSource->Release();
   }
   return hr;
@@ -1583,7 +1583,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
   {
     // Try to create using CoCreateInstance()
     hr = CoCreateInstance(*g_msdiav[i],
-                          NULL,
+                          nullptr,
                           CLSCTX_INPROC_SERVER,
                           __uuidof(IDiaDataSource),
                           (void**)&pSource);
@@ -1608,11 +1608,11 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 	  }
 	  if (!path[0])
 	  {
-		  if (SearchPathA(NULL, g_diadlls[i], NULL, qnumber(path), path, NULL) == 0
+		  if (SearchPathA(nullptr, g_diadlls[i], nullptr, qnumber(path), path, nullptr) == 0
               && !search_path(path, sizeof(path), g_diadlls[i], false)
 			  && (vc_shared.empty()
-				  || SearchPathA(vc_shared.c_str(), g_diadlls[i], NULL,
-					  qnumber(path), path, NULL) == 0))
+				  || SearchPathA(vc_shared.c_str(), g_diadlls[i], nullptr,
+					  qnumber(path), path, nullptr) == 0))
 		  {
 			  continue;
 		  }
@@ -1622,7 +1622,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
       {
         hr = CoCreateInstanceNoReg(path,
                                    *g_msdiav[j],
-                                   NULL,
+                                   nullptr,
                                    __uuidof(IDiaDataSource),
                                    (void**)&pSource,
                                    &dia_hmod);
@@ -1664,7 +1664,7 @@ HRESULT pdb_session_t::create_dia_source(int *dia_version)
 pdb_session_ref_t::pdb_session_ref_t(const pdb_session_ref_t &r)
   : session(r.session)
 {
-  if ( session != NULL )
+  if ( session != nullptr )
     session->refcount++;
 }
 
@@ -1683,30 +1683,30 @@ pdb_session_ref_t &pdb_session_ref_t::operator=(const pdb_session_ref_t &r)
 pdb_session_ref_t::~pdb_session_ref_t()
 {
   close();
-  if ( session != NULL )
+  if ( session != nullptr )
   {
     delete session;
-    session = NULL;
+    session = nullptr;
   }
 }
 
 //----------------------------------------------------------------------
 void pdb_session_ref_t::create_session(void)
 {
-  QASSERT(30462, session == NULL);
+  QASSERT(30462, session == nullptr);
   session = new pdb_session_t();
 }
 
 //----------------------------------------------------------------------
 void pdb_session_ref_t::close()
 {
-  if ( session != NULL )
+  if ( session != nullptr )
   {
     // shared instance? then detach
     if ( session->refcount > 1 )
     { // unlink
       session->refcount--;
-      session = NULL;
+      session = nullptr;
     }
     else
     {

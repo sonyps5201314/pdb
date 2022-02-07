@@ -3,11 +3,11 @@
 template <typename T>
 struct dia_ptr_t
 {
-  dia_ptr_t() : thing(NULL) {}
+  dia_ptr_t() : thing(nullptr) {}
 
   ~dia_ptr_t()
   {
-    if ( thing != NULL )
+    if ( thing != nullptr )
       thing->Release();
   }
 
@@ -24,7 +24,7 @@ HRESULT local_pdb_access_t::_do_iterate_symbols_enumerator(
   while ( true )
   {
     ULONG celt = 0;
-    IDiaSymbol *pChild = NULL;
+    IDiaSymbol *pChild = nullptr;
     hr = sym_enum->Next(1, &pChild, &celt);
     if ( FAILED(hr) || celt != 1 )
     {
@@ -65,7 +65,7 @@ HRESULT local_pdb_access_t::safe_iterate_children(
   {
     QASSERT(30536, sym.whoami() == DIA_PDB_SYM);
     dia_pdb_sym_t &diasym = (dia_pdb_sym_t &)sym;
-    hr = dia_session->findChildren(diasym.data, type, NULL, nsNone, &pEnumSymbols);
+    hr = dia_session->findChildren(diasym.data, type, nullptr, nsNone, &pEnumSymbols);
     if ( hr == S_OK )
     {
       hr = _do_iterate_symbols_enumerator(pEnumSymbols, visitor);
@@ -113,7 +113,7 @@ HRESULT local_pdb_access_t::do_iterate_children(
     // we may arrive here because we ran out of memory
     // try to free some memory before quitting (and saving the idb)
     delete this;
-    error(NULL); // and die... this will save the idb
+    error(nullptr); // and die... this will save the idb
   }
   return hr;
 }
@@ -161,7 +161,7 @@ HRESULT local_pdb_access_t::_copy_line_numbers(
         l->get_lineNumber(&lo.lineNumber);
         l->get_lineNumberEnd(&lo.lineNumberEnd);
         l->get_statement(&lo.statement);
-        IDiaSourceFile *f = NULL;
+        IDiaSourceFile *f = nullptr;
         if ( l->get_sourceFile(&f) == S_OK )
         {
           f->get_uniqueId(&lo.file_id);
@@ -254,9 +254,9 @@ HRESULT local_pdb_access_t::sip_iterate_symbols_at_ea(
     qnotused(old);
 
     LONG disp;
-    IDiaSymbol *sym = NULL;
+    IDiaSymbol *sym = nullptr;
     HRESULT hr = dia_session->findSymbolByVAEx(cur, tag, &sym, &disp);
-    if ( FAILED(hr) || sym == NULL )
+    if ( FAILED(hr) || sym == nullptr )
       break;
 
     // perform all get_*'s on 'sym' _before_ the visitor is called: it might
@@ -325,7 +325,7 @@ HRESULT local_pdb_access_t::sip_retrieve_file_path(
 
   if ( FAILED(hr) )
   {
-    if ( errbuf != NULL )
+    if ( errbuf != nullptr )
       *errbuf = winerr(hr);
   }
 
@@ -338,7 +338,7 @@ HRESULT local_pdb_access_t::_copy_files_ids(
         IDiaEnumSourceFiles *enumerator) const
 {
   ULONG celt = 0;
-  IDiaSourceFile *file = NULL;
+  IDiaSourceFile *file = nullptr;
   while ( enumerator->Next(1, &file, &celt) == S_OK && celt > 0 )
   {
     DWORD file_id;
@@ -362,7 +362,7 @@ HRESULT local_pdb_access_t::sip_retrieve_symbol_files(
   if ( hr == S_OK ) // cannot use SUCCEEDED(hr) because S_OK means success
   {
     dia_ptr_t<IDiaEnumSourceFiles> pEnumSourceFiles;
-    hr = dia_session->findFile(NULL, path, nsfFNameExt, &pEnumSourceFiles.thing);
+    hr = dia_session->findFile(nullptr, path, nsfFNameExt, &pEnumSourceFiles.thing);
     SysFreeString(path);
 
     if ( hr == S_OK )
@@ -377,8 +377,8 @@ HRESULT local_pdb_access_t::sip_find_files(
         const char *filename)
 {
   qwstring fnamebuf;
-  wchar16_t *fname = NULL;
-  if ( filename != NULL )
+  wchar16_t *fname = nullptr;
+  if ( filename != nullptr )
   {
     qstring fnametmp = filename;
     utf8_utf16(&fnamebuf, &fnametmp[0]);
@@ -387,7 +387,7 @@ HRESULT local_pdb_access_t::sip_find_files(
 
   dia_ptr_t<IDiaEnumSourceFiles> pEnumSourceFiles;
   HRESULT hr = dia_session->findFile(
-          NULL,
+          nullptr,
           fname,
           nsfFNameExt | nsfCaseInsensitive,
           &pEnumSourceFiles.thing);

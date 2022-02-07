@@ -52,7 +52,7 @@ public:
     bool is_notype;
     tinfo_t type;
     til_t *ti;  // FIXME: do we need this?
-    tpinfo_t(void) : cvt_code(cvt_ok), is_notype(false), ti(NULL) {}
+    tpinfo_t(void) : cvt_code(cvt_ok), is_notype(false), ti(nullptr) {}
     tpinfo_t(til_t *_ti, const tinfo_t &t) : cvt_code(cvt_ok), is_notype(false), type(t), ti(_ti) {}
     const char *dstr(void) const
     {
@@ -72,7 +72,7 @@ public:
       unnamed_idx(0),
       level(0),
       ti(_ti),
-      pdb_access(NULL),
+      pdb_access(nullptr),
       enregistered_bug(false)
   {
     set_pdb_access(_pa);

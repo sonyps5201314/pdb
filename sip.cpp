@@ -43,8 +43,8 @@ struct pdb_modinfo_t
       base(BADADDR),
       size(0),
       opened(false),
-      pdb_access(NULL),
-      type_cache(NULL),
+      pdb_access(nullptr),
+      type_cache(nullptr),
       use_pdbida(false)
   {}
 
@@ -87,7 +87,7 @@ HRESULT pdb_modinfo_t::open(
         const char *user_spath,
         ea_t load_address)
 {
-  QASSERT(30212, type_cache == NULL);
+  QASSERT(30212, type_cache == nullptr);
   pdbargs_t args;
   args.input_path = input_file;
   args.spath = user_spath;
@@ -118,7 +118,7 @@ HRESULT pdb_modinfo_t::open(
   }
   if ( hr == S_OK )
   {
-    type_cache = new til_builder_t(pv, CONST_CAST(til_t *)(get_idati()), NULL);
+    type_cache = new til_builder_t(pv, CONST_CAST(til_t *)(get_idati()), nullptr);
     type_cache->set_pdb_access(pdb_access);
   }
   return hr;
@@ -129,7 +129,7 @@ source_item_t *pdb_modinfo_t::find_static_item_in_module(
         const char *iname)
 {
   if ( !opened )
-    return NULL;
+    return nullptr;
 
   DWORD id = 0;
   module_globals_t::iterator p = module_globals.find(iname);
@@ -163,7 +163,7 @@ source_item_t *pdb_modinfo_t::find_static_item_in_module(
     id = iter.id;
     module_globals[iname] = id; // populate
   }
-  return id != 0 ? new_pdb_symbol(this, id) : NULL;
+  return id != 0 ? new_pdb_symbol(this, id) : nullptr;
 }
 
 //-------------------------------------------------------------------------
@@ -218,15 +218,15 @@ struct pdb_source_file_t : public source_file_t
 
     if ( !qfileexist(path) )
     {
-      if ( errbuf != NULL )
+      if ( errbuf != nullptr )
         errbuf->sprnt("source file not found: %s", path);
       return false;
     }
 
     FILE *fp = fopenRT(path);
-    if ( fp == NULL )
+    if ( fp == nullptr )
     {
-      if ( errbuf != NULL )
+      if ( errbuf != nullptr )
         *errbuf = get_errdesc(path);
       return false;
     }
@@ -246,7 +246,7 @@ struct pdb_source_file_t : public source_file_t
 
   TWidget *open_srcview(strvec_t ** /*strvec*/, TWidget ** /*pview*/, int, int) override
   {
-    return NULL;
+    return nullptr;
   }
 };
 
@@ -294,7 +294,7 @@ struct dummy_item_t : public source_item_t
   dummy_item_t(pdb_modinfo_t *_pdb_module) : pdb_module(_pdb_module) {}
   virtual ~dummy_item_t(void) { pdb_module = nullptr; }
   void idaapi release(void) override { delete this; }
-  source_file_iterator idaapi get_source_files(void) override { return source_file_iterator(NULL); }
+  source_file_iterator idaapi get_source_files(void) override { return source_file_iterator(nullptr); }
   int idaapi get_lnnum() const override { return -1; }
   int idaapi get_end_lnnum() const override { return -1; }
   int idaapi get_colnum() const override { return -1; }
@@ -310,8 +310,8 @@ struct dummy_item_t : public source_item_t
     set->add(range_t(ea, ea+size));
     return true;
   }
-  source_item_ptr idaapi get_parent(src_item_kind_t) const override { return source_item_ptr(NULL); }
-  source_item_iterator idaapi create_children_iterator() override { return source_item_iterator(NULL); }
+  source_item_ptr idaapi get_parent(src_item_kind_t) const override { return source_item_ptr(nullptr); }
+  source_item_iterator idaapi create_children_iterator() override { return source_item_iterator(nullptr); }
   bool idaapi get_hint(qstring *hint, const eval_ctx_t *, int *nlines) const override
   {
     // TODO: remove these test lines
@@ -461,7 +461,7 @@ public:
 
   source_file_iterator idaapi get_source_files(void) override
   {
-    pdb_file_iterator *ret = NULL;
+    pdb_file_iterator *ret = nullptr;
     qvector<DWORD> ids;
     HRESULT hr = pdb_module->get_access()->sip_retrieve_symbol_files(
             &ids, *sym);
@@ -524,7 +524,7 @@ public:
 
   source_item_ptr idaapi get_parent(src_item_kind_t /*max_kind*/) const override
   {
-    source_item_t *ret = NULL;
+    source_item_t *ret = nullptr;
     pdb_sym_t *lpar = pdb_module->get_access()->create_sym();
     pdb_sym_janitor_t janitor_lpar(lpar);
     DWORD par_id = 0;
@@ -609,7 +609,7 @@ public:
   bool idaapi get_expr_tinfo(tinfo_t *tif) const override
   {
     til_builder_t::tpinfo_t tpi;
-    bool res = pdb_module->type_cache->retrieve_type(&tpi, *sym, NULL, NULL);
+    bool res = pdb_module->type_cache->retrieve_type(&tpi, *sym, nullptr, nullptr);
 
     *tif = tpi.type;
 
@@ -633,8 +633,8 @@ public:
   {
     DWORD this_id, other_id;
     pdb_symbol_t *other = (pdb_symbol_t*) othr;
-    return other != NULL
-        && other->sym != NULL
+    return other != nullptr
+        && other->sym != nullptr
         && pdb_module == other->pdb_module
         && sym->get_symIndexId(&this_id) == S_OK
         && other->sym->get_symIndexId(&other_id) == S_OK
@@ -645,7 +645,7 @@ public:
 //--------------------------------------------------------------------------
 source_item_iterator idaapi pdb_symbol_t::create_children_iterator()
 {
-  pdb_item_iterator *ret = NULL;
+  pdb_item_iterator *ret = nullptr;
   source_items_vec_builder_t items_builder(pdb_module);
   if ( pdb_module->get_access()->iterate_children(
                *sym, SymTagNull, items_builder) == S_OK )
@@ -667,7 +667,7 @@ public:
 
   virtual source_file_iterator idaapi get_source_files(void) override
   {
-    pdb_file_iterator *ret = NULL;
+    pdb_file_iterator *ret = nullptr;
     if ( lnnum->file_id != DWORD(-1) )
     {
       ret = new pdb_file_iterator();
@@ -720,7 +720,7 @@ public:
 
   virtual source_item_ptr idaapi get_parent(src_item_kind_t /*max_kind*/) const override
   {
-    source_item_t *ret = NULL;
+    source_item_t *ret = nullptr;
     ea_t ea = get_ea();
     if ( ea != BADADDR )
     {
@@ -742,8 +742,8 @@ public:
   bool idaapi equals(const source_item_t *othr) const override
   {
     pdb_lnnum_item_t *other = (pdb_lnnum_item_t*) othr;
-    return other != NULL
-        && other->lnnum != NULL
+    return other != nullptr
+        && other->lnnum != nullptr
         && lnnum->va != BADADDR
         && other->lnnum->va != BADADDR
         && lnnum->va == other->lnnum->va;
@@ -808,7 +808,7 @@ static source_item_t *new_pdb_symbol(pdb_modinfo_t *pdb_module, DWORD sym_id)
   if ( kind != SRCIT_NONE )
     return new pdb_symbol_t(pdb_module, sym, /*own=*/ true, kind);
   delete sym;
-  return NULL;
+  return nullptr;
 }
 
 //--------------------------------------------------------------------------
@@ -818,7 +818,7 @@ static source_item_t *new_pdb_symbol_or_delete(pdb_modinfo_t *pdb_module, pdb_sy
   if ( kind != SRCIT_NONE )
     return new pdb_symbol_t(pdb_module, sym, /*own=*/ true, kind);
   delete sym;
-  return NULL;
+  return nullptr;
 }
 
 //--------------------------------------------------------------------------
@@ -837,7 +837,7 @@ class pdb_provider_t : public srcinfo_provider_t
       if ( FAILED(hr) )
       { // failed to open the corresponding pdb file
         modules.erase(p);
-        return NULL;
+        return nullptr;
       }
       mod.opened = true;
     }
@@ -850,11 +850,11 @@ class pdb_provider_t : public srcinfo_provider_t
     if ( p == modules.end() || p->first > ea )
     {
       if ( p == modules.begin() )
-        return NULL; // could not find the module
+        return nullptr; // could not find the module
 
       --p;
       if ( p->first > ea || p->first+p->second.size <= ea )
-        return NULL;
+        return nullptr;
     }
     return open_module(p);
   }
@@ -865,7 +865,7 @@ class pdb_provider_t : public srcinfo_provider_t
     for ( ; p != modules.end(); ++p )
       if ( p->second.path == path )
         return &p->second;
-    return NULL;
+    return nullptr;
   }
 
 public:
@@ -898,7 +898,7 @@ static bool is_pdb_supported(void)
     return true;
 
   // Otherwise check for debugger.
-  if ( dbg == NULL )
+  if ( dbg == nullptr )
     return false;
 
   // Win32 debugger.
@@ -959,7 +959,7 @@ void idaapi pdb_provider_t::add_module(
   // do not open the module immediately, we will do it only when we
   // really need the module
   mod.opened     = false;
-  mod.type_cache = NULL;
+  mod.type_cache = nullptr;
 }
 
 
@@ -1011,7 +1011,7 @@ class pdb_lnmap_iterator : public _source_item_iterator
 public:
 
   pdb_lnmap_iterator(pdb_modinfo_t *_pdb_module, lnmap_t *map)
-    : pdb_module(_pdb_module), item(NULL), idx(0)
+    : pdb_module(_pdb_module), item(nullptr), idx(0)
   {
     map->swap(lnmap);
     p = lnmap.end();
@@ -1074,9 +1074,9 @@ source_item_iterator idaapi pdb_provider_t::find_source_items(
         bool)
 {
   deb(IDA_DEBUG_SRCDBG, "PDB: find_source_items(ea=%a, size=%" FMT_64 "u)\n", ea, (uint64) size);
-  pdb_item_iterator *ret = NULL;
+  pdb_item_iterator *ret = nullptr;
   pdb_modinfo_t *pdb_module = find_module(ea);
-  if ( pdb_module != NULL )
+  if ( pdb_module != nullptr )
   {
     enum SymTagEnum tag;
     switch ( level )
@@ -1087,7 +1087,7 @@ source_item_iterator idaapi pdb_provider_t::find_source_items(
       case SRCIT_STMT:       // a statement (if/while/for...)
       case SRCIT_EXPR:       // an expression (a+b*c)
         {
-          pdb_lnmap_iterator *ret2 = NULL;
+          pdb_lnmap_iterator *ret2 = nullptr;
           pdb_lnnums_t lnnums;
           HRESULT hr = pdb_module->get_access()->sip_retrieve_lines_by_va(
                   &lnnums, ea, size);
@@ -1125,7 +1125,7 @@ source_item_iterator idaapi pdb_provider_t::find_source_items(
         int lnnum,
         int colnum)
 {
-  pdb_lnmap_iterator *ret = NULL;
+  pdb_lnmap_iterator *ret = nullptr;
   pdb_source_file_t *psf = (pdb_source_file_t *)sf;
   pdb_lnnums_t lnnums;
   HRESULT hr = psf->pdb_module->get_access()->sip_retrieve_lines_by_coords(
@@ -1142,7 +1142,7 @@ source_item_iterator idaapi pdb_provider_t::find_source_items(
 //--------------------------------------------------------------------------
 static bool is_hexrays_filename(const char *fname)
 {
-  if ( fname != NULL && *fname == '$' )
+  if ( fname != nullptr && *fname == '$' )
   {
     while ( true )
     {
@@ -1159,7 +1159,7 @@ static bool is_hexrays_filename(const char *fname)
 //--------------------------------------------------------------------------
 source_file_iterator idaapi pdb_provider_t::create_file_iterator(const char *filename)
 {
-  pdb_file_iterator *ret = NULL;
+  pdb_file_iterator *ret = nullptr;
   // hack: check if the filename is like "$12345678"
   // if so, immediately return because such names are used by the decompiler sip
   if ( !is_hexrays_filename(filename) )
@@ -1170,7 +1170,7 @@ source_file_iterator idaapi pdb_provider_t::create_file_iterator(const char *fil
     for ( pdb_modules_t::iterator p=modules.begin(); p != modules.end(); )
     {
       pdb_modinfo_t *m = open_module(p++);
-      if ( m != NULL )
+      if ( m != nullptr )
       {
         qvector<DWORD> files_ids;
         m->get_access()->sip_find_files(&files_ids, filename);
@@ -1186,7 +1186,7 @@ source_file_iterator idaapi pdb_provider_t::create_file_iterator(const char *fil
     if ( ret->entries.empty() )
     {
       delete ret;
-      ret = NULL;
+      ret = nullptr;
     }
   }
   return source_file_iterator(ret);
@@ -1196,7 +1196,7 @@ source_file_iterator idaapi pdb_provider_t::create_file_iterator(const char *fil
 source_item_iterator idaapi pdb_provider_t::create_item_iterator(const source_file_t *sf)
 {
   pdb_source_file_t *psf = (pdb_source_file_t *) sf;
-  pdb_item_iterator *ret = NULL;
+  pdb_item_iterator *ret = nullptr;
   pdb_modinfo_t *mod = psf->pdb_module;
   source_items_vec_builder_t svec_builder(mod);
   if ( mod->get_access()->sip_iterate_file_compilands(
@@ -1216,7 +1216,7 @@ bool idaapi pdb_provider_t::apply_module_info(const char *path)
 #endif
 
   pdb_modinfo_t *module = find_module(path);
-  if ( module == NULL )
+  if ( module == nullptr )
     return false;
   pdbargs_t pdbargs;
   pdbargs.flags = PDBFLG_DBG_MODULE;
@@ -1239,18 +1239,18 @@ source_item_ptr idaapi pdb_provider_t::find_static_item(
         const char *iname,
         ea_t ea)
 {
-  source_item_t *si = NULL;
+  source_item_t *si = nullptr;
   pdb_modinfo_t *pdb_module = find_module(ea);
 
   // find in current module
-  if ( pdb_module != NULL )
+  if ( pdb_module != nullptr )
     si = pdb_module->find_static_item_in_module(iname);
 
   // not found? search in other modules
-  if ( si == NULL )
+  if ( si == nullptr )
   {
     pdb_modules_t::iterator p = modules.begin();
-    for ( ; si == NULL && p != modules.end(); ++p )
+    for ( ; si == nullptr && p != modules.end(); ++p )
       if ( &p->second != pdb_module )
         si = p->second.find_static_item_in_module(iname);
   }
@@ -1264,7 +1264,7 @@ HRESULT source_items_vec_builder_t::visit_child(pdb_sym_t &child)
   pdb_sym_t *cur = pdb_module->get_access()->create_sym();
   cur->steal_data(child);
   source_item_t *si = new_pdb_symbol_or_delete(pdb_module, cur);
-  if ( si != NULL )
+  if ( si != nullptr )
     items.push_back(source_item_ptr(si));
   return S_OK;
 }

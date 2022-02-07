@@ -69,7 +69,7 @@ static bool looks_like_function_name(const char *name)
   // in the demangled name indicates a function
   // we can have a pointer to a function and there will be a brace
   // but this logic is not applied to data segments
-  if ( strchr(name, '(') != NULL )
+  if ( strchr(name, '(') != nullptr )
     return true;
 
   // check various function keywords
@@ -84,7 +84,7 @@ static bool looks_like_function_name(const char *name)
     "__thiscall ",
   };
   for ( int i=0; i < qnumber(keywords); i++ )
-    if ( strstr(name, keywords[i]) != NULL )
+    if ( strstr(name, keywords[i]) != nullptr )
       return true;
   return false;
 }
@@ -97,8 +97,8 @@ bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
   while ( *ptr == '_' )
     ptr++;
 
-  static const char *const guids[] = { "IID", "DIID", "GUID", "CLSID", "LIBID", NULL };
-  static const char *const sids[] = { "SID", NULL };
+  static const char *const guids[] = { "IID", "DIID", "GUID", "CLSID", "LIBID", nullptr };
+  static const char *const sids[] = { "SID", nullptr };
 
   struct id_info_t
   {
@@ -112,13 +112,13 @@ bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
   };
   if ( !checked_types )
   {
-    if ( get_named_type(NULL, "GUID", NTF_TYPE) == 0 )
+    if ( get_named_type(nullptr, "GUID", NTF_TYPE) == 0 )
     {
       static const char decl[] = "typedef struct _GUID { unsigned long  Data1; unsigned short Data2; unsigned short Data3; unsigned char Data4[8];} GUID;";
-      h2ti(NULL, NULL, decl, HTI_DCL, NULL, NULL, msg);
+      h2ti(nullptr, nullptr, decl, HTI_DCL, nullptr, nullptr, msg);
     }
     // SID type is pretty complex, so we won't add it manually but just check if it exists
-    has_sid = get_named_type(NULL, "SID", NTF_TYPE) != 0;
+    has_sid = get_named_type(nullptr, "SID", NTF_TYPE) != 0;
     checked_types = true;
   }
   for ( int k=0; k < qnumber(ids); k++ )
@@ -133,7 +133,7 @@ bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
         && (ptr[len] == '_' || ptr[len] == ' ') ) // space can be in demangled names
       {
         if ( has_typeinfo )
-          apply_cdecl(NULL, ea, ids[k].type);
+          apply_cdecl(nullptr, ea, ids[k].type);
         return true;
       }
     }
@@ -141,7 +141,7 @@ bool pdb_ctx_t::check_for_ids(ea_t ea, const char *name, bool has_typeinfo)
   if ( strncmp(name, "_guid", 5) == 0 )
   {
     if ( has_typeinfo )
-      apply_cdecl(NULL, ea, ids[0].type);
+      apply_cdecl(nullptr, ea, ids[0].type);
     return true;
   }
   return false;
@@ -316,7 +316,7 @@ bool pdb_ctx_t::apply_name_in_idb(ea_t ea, const qstring &name, int maybe_func, 
 
   // do not automatically create functions in debugger segments
   segment_t *s = getseg(ea);
-  if ( s == NULL || !s->is_loader_segm() )
+  if ( s == nullptr || !s->is_loader_segm() )
     return true;
 
   // ARMv7 PDBs don't use bit 0 for Thumb mode
@@ -594,7 +594,7 @@ bool pdb_til_builder_t::handle_symbol_at_ea(
   }
 
   tpinfo_t tpi;
-  if ( get_symbol_type(&tpi, sym, NULL) )
+  if ( get_symbol_type(&tpi, sym, nullptr) )
   {
     // Apparently _NAME_ is a wrong symbol generated for file names
     // It has wrong type information, so correct it
@@ -635,7 +635,7 @@ bool pdb_til_builder_t::handle_symbol_at_ea(
       }
       if ( use_ti )
       {
-        type_created(ea, 0, NULL, tpi.type);
+        type_created(ea, 0, nullptr, tpi.type);
         apply_tinfo(ea, tpi.type, TINFO_STRICT);
       }
     }
@@ -670,8 +670,8 @@ HRESULT pdb_til_builder_t::handle_function_child(
         child_sym.get_name(&name);
         qstring canon;
         print_pdb_register(&canon, pdb_access->get_machine_type(), reg_id);
-        if ( pfn != NULL )
-          add_regvar(pfn, pfn->start_ea, pfn->end_ea, canon.c_str(), name.c_str(), NULL);
+        if ( pfn != nullptr )
+          add_regvar(pfn, pfn->start_ea, pfn->end_ea, canon.c_str(), name.c_str(), nullptr);
       }
       break;
 
@@ -681,12 +681,12 @@ HRESULT pdb_til_builder_t::handle_function_child(
         && (pdb_access->get_dia_version() >= 1400 ? reg_id == CV_ALLREG_VFRAME : reg_id == CV_REG_EBP))     // we can handle only ebp for the moment
       {
         func_t *pfn = get_func(ea);
-        if ( pfn != NULL )
+        if ( pfn != nullptr )
         {
           qstring name;
           child_sym.get_name(&name);
           tpinfo_t tpi;
-          if ( get_symbol_type(&tpi, child_sym, NULL) )
+          if ( get_symbol_type(&tpi, child_sym, nullptr) )
           {
             opinfo_t mt;
             size_t size;
@@ -705,8 +705,8 @@ HRESULT pdb_til_builder_t::handle_function_child(
                 {
                   insn_t insn;
                   insn.ea = pfn->start_ea;
-                  member_t *mptr = get_stkvar(NULL, insn, *(op_t*)NULL, offset); //lint !e413 deref null ptr
-                  if ( mptr != NULL )
+                  member_t *mptr = get_stkvar(nullptr, insn, *(op_t*)nullptr, offset); //lint !e413 deref null ptr
+                  if ( mptr != nullptr )
                   {
                     struc_t *sptr = get_frame(pfn);
                     set_member_tinfo(sptr, mptr, 0, tpi.type, 0);
@@ -879,7 +879,7 @@ void pdb_ctx_t::init_sympaths()
     qstring tmpdir;
     if ( !qgetenv("TMPDIR", &tmpdir) && !qgetenv("TMP", &tmpdir) )
       tmpdir = "/tmp";
-    qmakepath(cache_path, sizeof(cache_path), tmpdir.c_str(), "ida", NULL);
+    qmakepath(cache_path, sizeof(cache_path), tmpdir.c_str(), "ida", nullptr);
     if ( !qisdir(cache_path) && qmkdir(cache_path, 0777) != 0 )
       cache_path[0] = '\0';
     #endif
@@ -934,7 +934,7 @@ static bool read_pdb_signature(pdb_signature_t *pdb_sign)
   netnode penode(PE_NODE);
   rsds_t rsds;
   size_t size = sizeof(rsds_t);
-  if ( penode.getblob(&rsds, &size, 0, RSDS_TAG) != NULL && size == sizeof(rsds_t) ) // RSDS
+  if ( penode.getblob(&rsds, &size, 0, RSDS_TAG) != nullptr && size == sizeof(rsds_t) ) // RSDS
   {
     pdb_sign->age = rsds.age;
     pdb_sign->sig = 0;
@@ -945,7 +945,7 @@ static bool read_pdb_signature(pdb_signature_t *pdb_sign)
   {
     cv_info_pdb20_t nb10;
     size = sizeof(nb10);
-    if ( penode.getblob(&nb10, &size, 0, NB10_TAG) != NULL && size == sizeof(nb10) ) // NB10
+    if ( penode.getblob(&nb10, &size, 0, NB10_TAG) != nullptr && size == sizeof(nb10) ) // NB10
     {
       pdb_sign->age = nb10.age;
       pdb_sign->sig = nb10.signature;
@@ -990,7 +990,7 @@ static int idaapi details_modcb(int fid, form_actions_t &fa)
 static void set_file_by_ext(pdbargs_t *args, const char *buf)
 {
   const char *ext = get_file_ext(buf);
-  if ( ext != NULL && strieq(ext, "pdb") )
+  if ( ext != nullptr && strieq(ext, "pdb") )
   {
     args->pdb_path = buf;
     args->input_path.clear();
@@ -1020,12 +1020,12 @@ static bool ask_pdb_details(pdbargs_t *args)
     "\n";
 
   char buf[QMAXPATH];
-  const char *src = NULL;
+  const char *src = nullptr;
   if ( !args->pdb_path.empty() )
     src = args->pdb_path.begin();
   else if ( !args->input_path.empty() )
     src = args->input_path.begin();
-  if ( src == NULL )
+  if ( src == nullptr )
     src = "*.pdb";
 
   qstrncpy(buf, src, sizeof(buf));
@@ -1112,10 +1112,10 @@ static bool ask_for_pdb_file(pdbargs_t *pdbargs, const char *err_str)
               "%s: failed to load pdb info.\n%s\n"
               "Do you want to browse for the pdb file on disk?",
               disp_path.c_str(),
-              err_str == NULL ? "" : err_str) == ASKBTN_YES )
+              err_str == nullptr ? "" : err_str) == ASKBTN_YES )
   {
     char *pdb_file = ask_file(false, "*.pdb", "Choose PDB file");
-    if ( pdb_file != NULL )
+    if ( pdb_file != nullptr )
     {
       pdbargs->pdb_path = pdb_file;
       return true;
@@ -1321,7 +1321,7 @@ void pdb_ctx_t::parse_options(bool *opt_skip)
   do
   {
     char *end = qstrchr(opt, ':');
-    if ( end != NULL )
+    if ( end != nullptr )
       *end++ = '\0';
 
     if ( streq(opt, "off") )
@@ -1342,7 +1342,7 @@ void pdb_ctx_t::parse_options(bool *opt_skip)
             "msdia   use MSDIA provider\n");
     }
 
-    if ( end == NULL )
+    if ( end == nullptr )
       break;
     opt = end;
   } while ( true );
@@ -1399,7 +1399,7 @@ plugin_t PLUGIN =
   IDP_INTERFACE_VERSION,
   PLUGIN_MOD | PLUGIN_HIDE | PLUGIN_MULTI, // plugin flags:
   init,                 // initialize
-  nullptr,              // terminate. this pointer may be NULL.
+  nullptr,              // terminate. this pointer may be nullptr.
   nullptr,              // invoke plugin
 
   // long comment about the plugin

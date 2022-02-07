@@ -80,7 +80,7 @@ public:
   pdb_sym_t *create_sym(DWORD sym_id) { return pdb_access_t::create_sym(sym_id); }
 
   // Possibly remote operation.
-  // If NULL is returned, it means the symbol is not available, nor
+  // If nullptr is returned, it means the symbol is not available, nor
   // could it be fetched remotely.
   ioctl_pdb_code_t get_sym_data(pdb_sym_t &sym, sym_data_t **);
   ioctl_pdb_code_t get_sym_data(DWORD sym_id, sym_data_t **);

@@ -11,7 +11,7 @@
 //-------------------------------------------------------------------------
 bool is_win32_remote_debugger_loaded()
 {
-  return dbg != NULL && dbg->is_remote() && streq(dbg->name, "win32");
+  return dbg != nullptr && dbg->is_remote() && streq(dbg->name, "win32");
 }
 
 //----------------------------------------------------------------------------
@@ -162,10 +162,10 @@ sym_data_t::~sym_data_t()
   for ( int i = 0; i < SymTagMax; i++ )
   {
     children_t &children = children_infos[i];
-    if ( children.ids != NULL )
+    if ( children.ids != nullptr )
     {
       qfree(children.ids);
-      children.ids = NULL;
+      children.ids = nullptr;
       children.cnt = 0;
     }
   }
@@ -193,7 +193,7 @@ sym_data_t::~sym_data_t()
 
 #define READ_IF_FOUND(type, fun)                \
   const type *ptr = fun##_ptr(token);           \
-  if ( ptr == NULL )                            \
+  if ( ptr == nullptr )                            \
   {                                             \
     return S_FALSE;                             \
   }                                             \
@@ -251,7 +251,7 @@ HRESULT sym_data_t::get_variant(sym_token_t token, VARIANT *out) const
 const void *sym_data_t::any_ptr(sym_token_t token, sym_token_t start, sym_token_t end) const
 {
   if ( !token_present(token) )
-    return NULL;
+    return nullptr;
 
   static const sym_token_t ends[] =
   {
@@ -292,7 +292,7 @@ const void *sym_data_t::any_ptr(sym_token_t token, sym_token_t start, sym_token_
       ptr += type_size;
     }
   }
-  return NULL; // did not find the requested token
+  return nullptr; // did not find the requested token
 }
 
 //----------------------------------------------------------------------------
@@ -311,11 +311,11 @@ void remote_pdb_access_t::close_connection()
   if ( remote_session_id > 0 )
   {
     bytevec_t dummy;
-    perform_op(WIN32_IOCTL_PDB_CLOSE, dummy, NULL);
+    perform_op(WIN32_IOCTL_PDB_CLOSE, dummy, nullptr);
     remote_session_id = -1;
   }
 
-  if ( !was_connected && dbg != NULL )
+  if ( !was_connected && dbg != nullptr )
     dbg->term_debugger();
 }
 
@@ -324,7 +324,7 @@ void remote_pdb_access_t::close_connection()
 bool remote_pdb_access_t::load_win32_debugger(void)
 {
   was_connected = false;
-  if ( dbg != NULL && !is_win32_remote_debugger_loaded() )
+  if ( dbg != nullptr && !is_win32_remote_debugger_loaded() )
   {
     // a debugger is loaded, but it's not a remote win32
     warning("Loading PDB symbols requires a remote win32 debugger. "
@@ -340,7 +340,7 @@ bool remote_pdb_access_t::load_win32_debugger(void)
 
   netnode pdbnode(PDB_NODE_NAME);
   pdbnode.altset(PDB_LOADING_WIN32_DBG, true);
-  bool win32_dbg_loaded = load_debugger("win32", true) && dbg != NULL;
+  bool win32_dbg_loaded = load_debugger("win32", true) && dbg != nullptr;
   pdbnode.altdel(PDB_LOADING_WIN32_DBG);
 
   if ( !win32_dbg_loaded )
@@ -353,7 +353,7 @@ bool remote_pdb_access_t::load_win32_debugger(void)
   server = host[0] != '\0' ? host : "localhost";
 
   qstring pass;
-  if ( pwd != NULL )
+  if ( pwd != nullptr )
     pass = pwd;
 
   qstring dbg_errbuf;
@@ -415,7 +415,7 @@ HRESULT remote_pdb_access_t::open_connection()
   oper.pack_ea64(get_base_address());
   oper.pack_dd(pdbargs.flags);
 
-  void *outbuf = NULL;
+  void *outbuf = nullptr;
   ssize_t outsize = 0;
   ioctl_pdb_code_t rc = send_ioctl(
           WIN32_IOCTL_PDB_OPEN,
@@ -440,7 +440,7 @@ HRESULT remote_pdb_access_t::open_connection()
   while ( !done )
   {
     qfree(outbuf);
-    outbuf = NULL;
+    outbuf = nullptr;
     qsleep(100);
     user_cancelled(); // refresh the output window
     rc = send_ioctl(
@@ -497,7 +497,7 @@ ioctl_pdb_code_t remote_pdb_access_t::send_ioctl(
         void **outbuf,
         ssize_t *outsz)
 {
-  if ( dbg == NULL )
+  if ( dbg == nullptr )
     return pdb_error;
 
   deb(IDA_DEBUG_DEBUGGER, "PDB: send_ioctl(fn=%d, size=%" FMT_Z ")\n", fn, size);
@@ -544,7 +544,7 @@ HRESULT remote_pdb_access_t::do_iterate_children(
   QASSERT(30205, code == pdb_ok);
   QASSERT(30206, type < SymTagMax);
   sym_data_t::children_t &children = symbol->children_infos[type];
-  if ( children.ids == NULL )
+  if ( children.ids == nullptr )
   {
     qvector<DWORD> children_ids;
     code = fetch_children_infos(sym, type, &children_ids);
@@ -775,12 +775,12 @@ void remote_pdb_access_t::handle_fetch_response(
   // Build cache!
   uint32 nchildren = 0;
   unpack_obj(&nchildren, sizeof(nchildren), ptr, end);
-  if ( ids_storage != NULL )
+  if ( ids_storage != nullptr )
     ids_storage->reserve(nchildren);
   for ( uint32 i = 0; i < nchildren; i++ )
   {
     DWORD created = build_and_register_sym_data(ptr, end);
-    if ( ids_storage != NULL )
+    if ( ids_storage != nullptr )
       ids_storage->push_back(created);
   }
 }
@@ -791,7 +791,7 @@ ioctl_pdb_code_t remote_pdb_access_t::perform_op(
         const bytevec_t &oper,
         void *data)
 {
-  void *outbuf = NULL;
+  void *outbuf = nullptr;
   ssize_t outsize = 0;
   bytevec_t raw;
   QASSERT(30494, remote_session_id > 0);
@@ -862,7 +862,7 @@ sym_data_t *remote_pdb_access_t::get_sym_data_from_cache(DWORD id)
   citer it = cache.find(id);
   if ( it != cache.end() )
     return it->second;
-  return NULL;
+  return nullptr;
 }
 
 //----------------------------------------------------------------------------
@@ -878,7 +878,7 @@ ioctl_pdb_code_t remote_pdb_access_t::get_sym_data(pdb_sym_t &pdbsym, sym_data_t
 ioctl_pdb_code_t remote_pdb_access_t::get_sym_data(DWORD id, sym_data_t **out)
 {
   sym_data_t *found = get_sym_data_from_cache(id);
-  if ( found != NULL )
+  if ( found != nullptr )
   {
     *out = found;
     return pdb_ok;
@@ -887,7 +887,7 @@ ioctl_pdb_code_t remote_pdb_access_t::get_sym_data(DWORD id, sym_data_t **out)
   {
     bytevec_t oper;
     oper.pack_dd(id);
-    ioctl_pdb_code_t rc = perform_op(WIN32_IOCTL_PDB_FETCH_SYMBOL, oper, NULL);
+    ioctl_pdb_code_t rc = perform_op(WIN32_IOCTL_PDB_FETCH_SYMBOL, oper, nullptr);
     if ( rc == pdb_ok )
     {
       rc = get_sym_data(id, out);

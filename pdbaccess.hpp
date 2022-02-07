@@ -188,7 +188,7 @@ typedef janitor_t<pdb_sym_t*> pdb_sym_janitor_t;
 template <> inline pdb_sym_janitor_t::~janitor_t()
 {
   delete resource;
-  resource = NULL;
+  resource = nullptr;
 }
 
 //----------------------------------------------------------------------------
@@ -312,12 +312,12 @@ struct dia_pdb_sym_t : public pdb_sym_t
 
   ~dia_pdb_sym_t()
   {
-    if ( data != NULL && own_sym )
+    if ( data != nullptr && own_sym )
     {
       data->Release();
-      data = NULL;
+      data = nullptr;
     }
-    pdb_access = NULL;
+    pdb_access = nullptr;
   }
 
   pdb_access_t *pdb_access;
@@ -330,7 +330,7 @@ struct dia_pdb_sym_t : public pdb_sym_t
     data    = s;
     own_sym = own;
   }
-  bool empty(void) { return data == NULL; }
+  bool empty(void) { return data == nullptr; }
 
   HRESULT get_backEndMajor(DWORD *out)            { return data->get_backEndMajor(out); }
   HRESULT get_baseType(DWORD *out)                { return data->get_baseType(out); }
@@ -391,11 +391,11 @@ struct dia_pdb_sym_t : public pdb_sym_t
 
   HRESULT handle_related_symbol(HRESULT fetch_success, IDiaSymbol *t, pdb_sym_t *out)
   {
-    if ( out == NULL )
+    if ( out == nullptr )
       return S_FALSE;
     QASSERT(30545, out->whoami() == DIA_PDB_SYM);
     dia_pdb_sym_t *sym = (dia_pdb_sym_t *)out;
-    sym->set_symbol_data(fetch_success == S_OK ? t : NULL, true);
+    sym->set_symbol_data(fetch_success == S_OK ? t : nullptr, true);
     return fetch_success;
   }
 
@@ -404,11 +404,11 @@ struct dia_pdb_sym_t : public pdb_sym_t
   {
     QASSERT(30541, whoami() == other.whoami());
     dia_pdb_sym_t &other_dia = (dia_pdb_sym_t &)other;
-    QASSERT(30503, other_dia.own_sym && other_dia.data != NULL && data == NULL);
+    QASSERT(30503, other_dia.own_sym && other_dia.data != nullptr && data == nullptr);
     data = other_dia.data;
     own_sym = true;
     other_dia.own_sym = false;
-    other_dia.data = NULL;
+    other_dia.data = nullptr;
   }
 
 private:
@@ -437,8 +437,8 @@ struct remote_pdb_sym_t : public pdb_sym_t
 
   ~remote_pdb_sym_t()
   {
-    data = NULL;
-    pdb_access = NULL;
+    data = nullptr;
+    pdb_access = nullptr;
   }
 
   void set_symbol_data(sym_data_t *s) { data = s; }
@@ -483,15 +483,15 @@ struct remote_pdb_sym_t : public pdb_sym_t
   {
     QASSERT(30542, whoami() == other.whoami());
     remote_pdb_sym_t &other_rem = (remote_pdb_sym_t &)other;
-    QASSERT(30492, other_rem.data != NULL && data == NULL);
+    QASSERT(30492, other_rem.data != nullptr && data == nullptr);
     data = other_rem.data;
-    // we don't want to set 'other.data = NULL', because in remote access,
+    // we don't want to set 'other.data = nullptr', because in remote access,
     // the pdb_sym_t doesn't actually own the data anyway: it's part of
     // the cache.
   }
 
   pdb_sym_id_t whoami(void) override { return REMOTE_PDB_SYM; }
-  bool empty(void) override          { return data == NULL; }
+  bool empty(void) override          { return data == nullptr; }
 
   pdb_access_t *pdb_access;
   sym_data_t *data;
@@ -561,7 +561,7 @@ public:
   struct children_visitor_t
   {
     children_visitor_t()
-      : parent(NULL) {}
+      : parent(nullptr) {}
 
     virtual HRESULT visit_child(pdb_sym_t &child) = 0;
     virtual ~children_visitor_t() {}
@@ -634,7 +634,7 @@ public:
   void set_dia_version(int _dia_version)          { dia_version   = _dia_version; }
 
   //----------------------------------------------------------------------------
-  virtual pdb_sym_t *create_sym(void *data=NULL, bool own=false) = 0;
+  virtual pdb_sym_t *create_sym(void *data=nullptr, bool own=false) = 0;
   pdb_sym_t *create_sym(DWORD sym_id)
   {
     pdb_sym_t *sym = create_sym();
