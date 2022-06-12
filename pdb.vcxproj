@@ -209,6 +209,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="cvadd.h" />
     <ClInclude Include="dia2_internal.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="misc.h" />

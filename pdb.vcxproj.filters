@@ -27,6 +27,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Program.h" />
     <ClInclude Include="misc.h" />
+    <ClInclude Include="cvadd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.cpp">

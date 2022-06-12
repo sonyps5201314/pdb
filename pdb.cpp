@@ -676,7 +676,8 @@ HRESULT pdb_til_builder_t::handle_function_child(
     case LocIsRegRel:
       if ( child_sym.get_registerId(&reg_id) == S_OK
         && child_sym.get_offset(&offset) == S_OK
-        && (pdb_access->get_dia_version() >= 1400 ? reg_id == CV_ALLREG_VFRAME : reg_id == CV_REG_EBP))     // we can handle only ebp for the moment
+        && (is_frame_reg(reg_id) || is_stack_reg(reg_id)) )
+        // attempt at handling both stack and frame regs (was ebp only)
       {
         func_t *pfn = get_func(ea);
         if ( pfn != nullptr )
@@ -692,10 +693,13 @@ HRESULT pdb_til_builder_t::handle_function_child(
             if ( get_idainfo_by_type(&size, &flags, &mt, tpi.type) )
             {
               // DIA's offset is bp-based, not frame-based like in IDA
-              offset -= pfn->fpd;
+              if ( is_frame_reg(reg_id) )
+                offset -= pfn->fpd;
+              else // SP-based; turn into frame-based
+                offset -= pfn->frsize;
               // make sure the new variable is not overwriting the return address
               // for some reason some PDBs have bogus offsets for some params/locals...
-              if ( !is_intel386(pdb_access->get_machine_type())
+              if ( !is_intel386(pdb_access->get_machine_type()) && !is_intel64(pdb_access->get_machine_type())
                 || offset > 0
                 || size <= -offset )
               {

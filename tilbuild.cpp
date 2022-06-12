@@ -469,40 +469,20 @@ bool til_builder_t::is_member_func(tinfo_t *class_type, pdb_sym_t &typeSym, pdb_
   return true;
 }
 
-//----------------------------------------------------------------------------
-bool til_builder_t::is_intel386(DWORD machine_type) const
+//----------------------------------------------------------------------
+bool til_builder_t::is_stack_reg(int reg) const
 {
-  return machine_type == CV_CFL_80386
-      || machine_type == CV_CFL_80486
-      || machine_type == CV_CFL_PENTIUM
-      || machine_type == CV_CFL_PENTIUMII
-      || machine_type == CV_CFL_PENTIUMIII;
-}
-
-//----------------------------------------------------------------------------
-bool til_builder_t::is_arm(DWORD machine_type) const
-{
-  return machine_type == CV_CFL_ARM3
-      || machine_type == CV_CFL_ARM4
-      || machine_type == CV_CFL_ARM4T
-      || machine_type == CV_CFL_ARM5
-      || machine_type == CV_CFL_ARM5T
-      || machine_type == CV_CFL_ARM6
-      || machine_type == CV_CFL_ARM7
-      || machine_type == CV_CFL_ARMNT
-      || machine_type == CV_CFL_ARM_XMAC
-      || machine_type == CV_CFL_ARM_WMMX
-      || machine_type == CV_CFL_THUMB;
+  return reg == get_stack_reg(pdb_access->get_machine_type());
 }
 
 //----------------------------------------------------------------------
 bool til_builder_t::is_frame_reg(int reg) const
 {
-  if ( is_intel386(pdb_access->get_machine_type()) )
-    return reg == CV_REG_EBP;
-  else if ( is_arm(pdb_access->get_machine_type()) )
-    return reg == CV_ARM_R11 || reg == CV_ARM_SP;
-  return false;
+  if (pdb_access->get_dia_version() >= 1400 && is_intel386(pdb_access->get_machine_type()))
+  {
+    return reg == CV_ALLREG_VFRAME;
+  }
+  return reg == get_frame_reg(pdb_access->get_machine_type());
 }
 
 //----------------------------------------------------------------------------
@@ -535,7 +515,7 @@ int til_builder_t::get_symbol_funcarg_info(
     LONG lOffset;
     if ( sym.get_registerId(&dwReg) == S_OK
       && sym.get_offset(&lOffset) == S_OK
-      && is_frame_reg(dwReg) )
+      && (is_frame_reg(dwReg) || is_stack_reg(dwReg)) )
     {
       uint32 align;
       out->argloc._set_stkoff(stack_off);

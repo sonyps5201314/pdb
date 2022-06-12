@@ -125,10 +125,9 @@ public:
   uint32 end_creation(const qstring &name);
   bool is_member_func(tinfo_t *class_type, pdb_sym_t &typeSym, pdb_sym_t *funcSym);
   bool is_frame_reg(int regnum) const;
+  bool is_stack_reg(int regnum) const;
   bool is_complex_return(pdb_sym_t &sym) const;
   bool is_unnamed_tag_typedef(const tinfo_t &tif) const;
-  bool is_intel386(DWORD machine_type) const;
-  bool is_arm(DWORD machine_type) const;
   int get_symbol_funcarg_info(
         funcarg_t *out,
         pdb_sym_t &sym,

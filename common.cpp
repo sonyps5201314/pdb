@@ -873,6 +873,7 @@ void print_pdb_register(qstring *out, int machine, int reg)
     case CV_CFL_ARM_XMAC:
     case CV_CFL_ARM_WMMX:
     case CV_CFL_THUMB:
+    case CV_CFL_ARMNT:
       //
       // Register set for the ARM processor.
       //
@@ -2538,6 +2539,185 @@ void print_pdb_register(qstring *out, int machine, int reg)
         case CV_AMD64_R14D:   *out = "r14d"; return;
         case CV_AMD64_R15D:   *out = "r15d"; return;
       }
+      break;
+
+    case CV_CFL_ARM64:
+      //
+      // ARM64 registers
+      //
+      switch ( reg )
+      {
+        case CV_ARM_NOREG:  *out = "noreg"; return;
+        case CV_ARM64_W0:   *out = "w0";    return;
+        case CV_ARM64_W1:   *out = "w1";    return;
+        case CV_ARM64_W2:   *out = "w2";    return;
+        case CV_ARM64_W3:   *out = "w3";    return;
+        case CV_ARM64_W4:   *out = "w4";    return;
+        case CV_ARM64_W5:   *out = "w5";    return;
+        case CV_ARM64_W6:   *out = "w6";    return;
+        case CV_ARM64_W7:   *out = "w7";    return;
+        case CV_ARM64_W8:   *out = "w8";    return;
+        case CV_ARM64_W9:   *out = "w9";    return;
+        case CV_ARM64_W10:  *out = "w10";   return;
+        case CV_ARM64_W11:  *out = "w11";   return;
+        case CV_ARM64_W12:  *out = "w12";   return;
+        case CV_ARM64_W13:  *out = "w13";   return;
+        case CV_ARM64_W14:  *out = "w14";   return;
+        case CV_ARM64_W15:  *out = "w15";   return;
+        case CV_ARM64_W16:  *out = "w16";   return;
+        case CV_ARM64_W17:  *out = "w17";   return;
+        case CV_ARM64_W18:  *out = "w18";   return;
+        case CV_ARM64_W19:  *out = "w19";   return;
+        case CV_ARM64_W20:  *out = "w20";   return;
+        case CV_ARM64_W21:  *out = "w21";   return;
+        case CV_ARM64_W22:  *out = "w22";   return;
+        case CV_ARM64_W23:  *out = "w23";   return;
+        case CV_ARM64_W24:  *out = "w24";   return;
+        case CV_ARM64_W25:  *out = "w25";   return;
+        case CV_ARM64_W26:  *out = "w26";   return;
+        case CV_ARM64_W27:  *out = "w27";   return;
+        case CV_ARM64_W28:  *out = "w28";   return;
+        case CV_ARM64_W29:  *out = "w29";   return;
+        case CV_ARM64_WZR:  *out = "wzr";   return;
+
+        // 64-bit integer registers
+        case CV_ARM64_X0:   *out = "x0";    return;
+        case CV_ARM64_X1:   *out = "x1";    return;
+        case CV_ARM64_X2:   *out = "x2";    return;
+        case CV_ARM64_X3:   *out = "x3";    return;
+        case CV_ARM64_X4:   *out = "x4";    return;
+        case CV_ARM64_X5:   *out = "x5";    return;
+        case CV_ARM64_X6:   *out = "x6";    return;
+        case CV_ARM64_X7:   *out = "x7";    return;
+        case CV_ARM64_X8:   *out = "x8";    return;
+        case CV_ARM64_X9:   *out = "x9";    return;
+        case CV_ARM64_X10:  *out = "x10";   return;
+        case CV_ARM64_X11:  *out = "x11";   return;
+        case CV_ARM64_X12:  *out = "x12";   return;
+        case CV_ARM64_X13:  *out = "x13";   return;
+        case CV_ARM64_X14:  *out = "x14";   return;
+        case CV_ARM64_X15:  *out = "x15";   return;
+        case CV_ARM64_IP0:  *out = "x16";   return;
+        case CV_ARM64_IP1:  *out = "x17";   return;
+        case CV_ARM64_X18:  *out = "x18";   return;
+        case CV_ARM64_X19:  *out = "x19";   return;
+        case CV_ARM64_X20:  *out = "x20";   return;
+        case CV_ARM64_X21:  *out = "x21";   return;
+        case CV_ARM64_X22:  *out = "x22";   return;
+        case CV_ARM64_X23:  *out = "x23";   return;
+        case CV_ARM64_X24:  *out = "x24";   return;
+        case CV_ARM64_X25:  *out = "x25";   return;
+        case CV_ARM64_X26:  *out = "x26";   return;
+        case CV_ARM64_X27:  *out = "x27";   return;
+        case CV_ARM64_X28:  *out = "x28";   return;
+        case CV_ARM64_FP:   *out = "fp";    return; // x29
+        case CV_ARM64_LR:   *out = "lr";    return; // x30
+        case CV_ARM64_SP:   *out = "sp";    return;
+        case CV_ARM64_ZR:   *out = "xzr";   return;
+
+        // 32-bit floating point registers
+        case CV_ARM64_S0:   *out = "s0";   return;
+        case CV_ARM64_S1:   *out = "s1";   return;
+        case CV_ARM64_S2:   *out = "s2";   return;
+        case CV_ARM64_S3:   *out = "s3";   return;
+        case CV_ARM64_S4:   *out = "s4";   return;
+        case CV_ARM64_S5:   *out = "s5";   return;
+        case CV_ARM64_S6:   *out = "s6";   return;
+        case CV_ARM64_S7:   *out = "s7";   return;
+        case CV_ARM64_S8:   *out = "s8";   return;
+        case CV_ARM64_S9:   *out = "s9";   return;
+        case CV_ARM64_S10:  *out = "s10";  return;
+        case CV_ARM64_S11:  *out = "s11";  return;
+        case CV_ARM64_S12:  *out = "s12";  return;
+        case CV_ARM64_S13:  *out = "s13";  return;
+        case CV_ARM64_S14:  *out = "s14";  return;
+        case CV_ARM64_S15:  *out = "s15";  return;
+        case CV_ARM64_S16:  *out = "s16";  return;
+        case CV_ARM64_S17:  *out = "s17";  return;
+        case CV_ARM64_S18:  *out = "s18";  return;
+        case CV_ARM64_S19:  *out = "s19";  return;
+        case CV_ARM64_S20:  *out = "s20";  return;
+        case CV_ARM64_S21:  *out = "s21";  return;
+        case CV_ARM64_S22:  *out = "s22";  return;
+        case CV_ARM64_S23:  *out = "s23";  return;
+        case CV_ARM64_S24:  *out = "s24";  return;
+        case CV_ARM64_S25:  *out = "s25";  return;
+        case CV_ARM64_S26:  *out = "s26";  return;
+        case CV_ARM64_S27:  *out = "s27";  return;
+        case CV_ARM64_S28:  *out = "s28";  return;
+        case CV_ARM64_S29:  *out = "s29";  return;
+        case CV_ARM64_S30:  *out = "s30";  return;
+        case CV_ARM64_S31:  *out = "s31";  return;
+
+        // 64-bit floating point registers
+        case CV_ARM64_D0:   *out = "d0";   return;
+        case CV_ARM64_D1:   *out = "d1";   return;
+        case CV_ARM64_D2:   *out = "d2";   return;
+        case CV_ARM64_D3:   *out = "d3";   return;
+        case CV_ARM64_D4:   *out = "d4";   return;
+        case CV_ARM64_D5:   *out = "d5";   return;
+        case CV_ARM64_D6:   *out = "d6";   return;
+        case CV_ARM64_D7:   *out = "d7";   return;
+        case CV_ARM64_D8:   *out = "d8";   return;
+        case CV_ARM64_D9:   *out = "d9";   return;
+        case CV_ARM64_D10:  *out = "d10";  return;
+        case CV_ARM64_D11:  *out = "d11";  return;
+        case CV_ARM64_D12:  *out = "d12";  return;
+        case CV_ARM64_D13:  *out = "d13";  return;
+        case CV_ARM64_D14:  *out = "d14";  return;
+        case CV_ARM64_D15:  *out = "d15";  return;
+        case CV_ARM64_D16:  *out = "d16";  return;
+        case CV_ARM64_D17:  *out = "d17";  return;
+        case CV_ARM64_D18:  *out = "d18";  return;
+        case CV_ARM64_D19:  *out = "d19";  return;
+        case CV_ARM64_D20:  *out = "d20";  return;
+        case CV_ARM64_D21:  *out = "d21";  return;
+        case CV_ARM64_D22:  *out = "d22";  return;
+        case CV_ARM64_D23:  *out = "d23";  return;
+        case CV_ARM64_D24:  *out = "d24";  return;
+        case CV_ARM64_D25:  *out = "d25";  return;
+        case CV_ARM64_D26:  *out = "d26";  return;
+        case CV_ARM64_D27:  *out = "d27";  return;
+        case CV_ARM64_D28:  *out = "d28";  return;
+        case CV_ARM64_D29:  *out = "d29";  return;
+        case CV_ARM64_D30:  *out = "d30";  return;
+        case CV_ARM64_D31:  *out = "d31";  return;
+
+        // 128-bit SIMD registers
+        case CV_ARM64_Q0:   *out = "q0";   return;
+        case CV_ARM64_Q1:   *out = "q1";   return;
+        case CV_ARM64_Q2:   *out = "q2";   return;
+        case CV_ARM64_Q3:   *out = "q3";   return;
+        case CV_ARM64_Q4:   *out = "q4";   return;
+        case CV_ARM64_Q5:   *out = "q5";   return;
+        case CV_ARM64_Q6:   *out = "q6";   return;
+        case CV_ARM64_Q7:   *out = "q7";   return;
+        case CV_ARM64_Q8:   *out = "q8";   return;
+        case CV_ARM64_Q9:   *out = "q9";   return;
+        case CV_ARM64_Q10:  *out = "q10";  return;
+        case CV_ARM64_Q11:  *out = "q11";  return;
+        case CV_ARM64_Q12:  *out = "q12";  return;
+        case CV_ARM64_Q13:  *out = "q13";  return;
+        case CV_ARM64_Q14:  *out = "q14";  return;
+        case CV_ARM64_Q15:  *out = "q15";  return;
+        case CV_ARM64_Q16:  *out = "q16";  return;
+        case CV_ARM64_Q17:  *out = "q17";  return;
+        case CV_ARM64_Q18:  *out = "q18";  return;
+        case CV_ARM64_Q19:  *out = "q19";  return;
+        case CV_ARM64_Q20:  *out = "q20";  return;
+        case CV_ARM64_Q21:  *out = "q21";  return;
+        case CV_ARM64_Q22:  *out = "q22";  return;
+        case CV_ARM64_Q23:  *out = "q23";  return;
+        case CV_ARM64_Q24:  *out = "q24";  return;
+        case CV_ARM64_Q25:  *out = "q25";  return;
+        case CV_ARM64_Q26:  *out = "q26";  return;
+        case CV_ARM64_Q27:  *out = "q27";  return;
+        case CV_ARM64_Q28:  *out = "q28";  return;
+        case CV_ARM64_Q29:  *out = "q29";  return;
+        case CV_ARM64_Q30:  *out = "q30";  return;
+        case CV_ARM64_Q31:  *out = "q31";  return;
+      }
+      break;
 
     default:
       break;

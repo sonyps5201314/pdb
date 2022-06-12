@@ -3,10 +3,9 @@
 #ifndef PDBACCESS__H
 #define PDBACCESS__H
 
-#include <set>
-
 #include <pro.h>
 #include "cvconst.h"
+#include "cvadd.h"
 
 #ifdef __NT__
 #include <windows.h>
