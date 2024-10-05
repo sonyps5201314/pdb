@@ -1220,11 +1220,27 @@ bool idaapi pdb_provider_t::apply_module_info(const char *path)
     return false;
   pdbargs_t pdbargs;
   pdbargs.flags = PDBFLG_DBG_MODULE;
-  pdbargs.flags |= PDBFLG_LOAD_TYPES;
-  if ( !(inf_get_filetype() != f_PE && !is_miniidb()) )
+  if ( (inf_get_filetype() == f_PE || is_miniidb()) )
     pdbargs.flags |= PDBFLG_LOAD_NAMES;
+  else
+    pdbargs.flags |= PDBFLG_LOAD_TYPES;
   pdbargs.loaded_base = module->base;
   pdbargs.input_path = module->path.c_str();
+
+  static const char form[] =
+    "Load PDB file\n"
+    "\n"
+    "%A\n"
+    "<#Load types#Load ~t~ypes:C" QSTRINGIZE(LOAD_TYPES_FIELD) ">\n"
+    "<#Load names#Load ~n~ames:C" QSTRINGIZE(LOAD_NAMES_FIELD) ">>\n";
+  sval_t load_options = 0;
+  setflag(load_options, LOAD_TYPES, (pdbargs.flags & PDBFLG_LOAD_TYPES) != 0);
+  setflag(load_options, LOAD_NAMES, (pdbargs.flags & PDBFLG_LOAD_NAMES) != 0);
+  if ( !ask_form(form, pdbargs.input_path.c_str(), &load_options) )
+    return false;
+  setflag(pdbargs.flags, PDBFLG_LOAD_TYPES, (load_options & LOAD_TYPES) != 0);
+  setflag(pdbargs.flags, PDBFLG_LOAD_NAMES, (load_options & LOAD_NAMES) != 0);
+
   show_wait_box("HIDECANCEL\nRetrieving symbol information from '%s'",
                 qbasename(module->path.c_str()));
   // pdb_path: cleared
