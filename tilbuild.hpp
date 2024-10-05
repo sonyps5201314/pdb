@@ -121,6 +121,7 @@ public:
   cm_t convert_cc(DWORD cc0) const;
   bool get_variant_string_value(qstring *out, pdb_sym_t &sym) const;
   uint32 get_variant_long_value(pdb_sym_t &sym) const;
+  uint32 allocate_and_assign_ordinal(const char *name) const;
   bool begin_creation(DWORD tag, const qstring &name, uint32 *p_id);
   uint32 end_creation(const qstring &name);
   bool is_member_func(tinfo_t *class_type, pdb_sym_t &typeSym, pdb_sym_t *funcSym);

@@ -32,6 +32,9 @@
 int data_id;
 
 #include "pdb.hpp"
+#define LOAD_TYPES 0x1
+#define LOAD_NAMES 0x2
+
 #include "common.cpp"
 #ifdef ENABLE_REMOTEPDB
 // We only enable remote PDB fetching in case
@@ -960,8 +963,6 @@ static qstring get_input_path()
 #define ADDRESS_FIELD 10
 #define LOAD_TYPES_FIELD 20
 #define LOAD_NAMES_FIELD 30
-#define LOAD_TYPES 0x1
-#define LOAD_NAMES 0x2
 
 //--------------------------------------------------------------------------
 static int idaapi details_modcb(int fid, form_actions_t &fa)
@@ -1097,8 +1098,8 @@ static bool get_details_from_pe(pdbargs_t *args)
   args->loaded_base = penode.altval(PE_ALT_IMAGEBASE);
 
   static const char formstr[] =
-    "BUTTON YES Yes\n"
-    "BUTTON NO No\n"
+    "BUTTON YES ~Y~es\n"
+    "BUTTON NO ~N~o\n"
     "BUTTON CANCEL NONE\n"
     "Load PDB file\n"
     "The input file was linked with debug information stored here:\n"
@@ -1106,7 +1107,7 @@ static bool get_details_from_pe(pdbargs_t *args)
     "Do you want to look for this file at the specified path\n"
     "and the Microsoft Symbol Server?\n"
     "<#Load types#Load ~t~ypes:C10>\n"
-    "<#Load names#Load ~n~ames:C20>>\n";
+    "<#Load names#Load n~a~mes:C20>>\n";
 
   qstring form;
   form.sprnt(formstr, args->pdb_path.c_str());

@@ -18,8 +18,9 @@ void dump_pdb_udt(const pdb_udt_type_data_t &udt, const char *udt_name)
 {
   static size_t udt_counter = 0;
   ++udt_counter;
-  msg("PDEB: %" FMT_Z " struct '%s' total_size %" FMT_Z " taudt_bits 0x%X is_union %s\n",
+  msg("PDEB: %" FMT_Z " %s '%s' total_size %" FMT_Z " taudt_bits 0x%X is_union %s\n",
       udt_counter,
+      udt.is_union ? "union" : "struct",
       udt_name != nullptr ? udt_name : "",
       udt.total_size,
       udt.taudt_bits,
@@ -1547,6 +1548,7 @@ cvt_code_t til_builder_t::fix_bit_union(pdb_udt_type_data_t *udt) const
     if ( !um.is_bitfield() )
       return cvt_ok;
   }
+  dump_pdb_udt(*udt, "|fix_bit_union|");
   // starting gap?
   if ( udt->begin()->offset == 0 )
     return cvt_ok;
@@ -2069,6 +2071,23 @@ cvt_code_t til_builder_t::convert_type(
 }
 
 //----------------------------------------------------------------------
+uint32 til_builder_t::allocate_and_assign_ordinal(const char *name) const
+{
+  // type may be copied already from base til
+  uint32 ord = get_type_ordinal(ti, name);
+  if ( ord == 0 )
+  {
+    ord = alloc_type_ordinal(ti);
+    // create a forward declaration.
+    // we need it because named type my be appeared during copy_named_type()
+    tinfo_t tif;
+    tif.create_typedef(ti, "", BTF_STRUCT, false);
+    tif.set_numbered_type(ti, ord, NTF_TYPE, name);
+  }
+  return ord;
+}
+
+//----------------------------------------------------------------------
 bool til_builder_t::begin_creation(DWORD tag, const qstring &name, uint32 *p_ord)
 {
   if ( tag != SymTagFunction )
@@ -2080,7 +2099,7 @@ bool til_builder_t::begin_creation(DWORD tag, const qstring &name, uint32 *p_ord
       if ( c->second == 0 ) // allocated?
       {
         if ( ord == 0 )
-          ord = alloc_type_ordinal(ti); // have to create the type ord immediately
+          ord = allocate_and_assign_ordinal(name.c_str());
         c->second = ord;
         QASSERT(490, ord != 0);
         ddeb(("PDEB: '%s' prematurely mapped to %u\n", name.c_str(), ord));
@@ -2105,7 +2124,7 @@ uint32 til_builder_t::end_creation(const qstring &name)
   }
   if ( ord == 0 )
   {
-    ord = alloc_type_ordinal(ti); // have to create the type ord immediately
+    ord = allocate_and_assign_ordinal(name.c_str());
     QASSERT(491, ord != 0);
     ddeb(("PDEB: '%s' prematurely mapped to %u\n", name.c_str(), ord));
   }
@@ -2162,6 +2181,34 @@ cvt_code_t til_builder_t::handle_overlapping_members(pdb_udt_type_data_t *udt) c
           --fidx;
           --first;
           off = first->offset;
+        }
+        // calculate collected bitfield size so far
+        uint64 bf_collected_size = 0;
+        for ( pdb_udt_type_data_t::iterator q=first; q != p; ++q )
+        {
+          if ( q->is_bitfield() )
+            bf_collected_size = q->bit_offset + q->size;
+        }
+        // in case of byte boundary at gap for the bitfield member (Padding)
+        // there may be gap-member (Reserved) for the previous member (Variant):
+        //  4. offset 0x80 size 0x8  'Variant' type      'unsigned __int8' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
+        //  5. offset 0x80 size 0x8  'Padding' type      'unsigned __int32 : 8' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
+        //  6. offset 0x88 size 0x18 'Reserved' type     'unsigned __int8[3]' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
+        //  7. offset 0x88 size 0x1  'ChangeTimeUpgrade' type 'unsigned __int32 : 1' effalign 0 tafld_bits 0x0 fda 0 bit_offset 8
+        //  8. offset 0x89 size 0x17 'ReservedFlags'     type 'unsigned __int32 : 23' effalign 0 tafld_bits 0x0 fda 0 bit_offset 9
+        //  Note:
+        //  1. suppose that gap-member may be only one
+        //  2. there is a need to skip (accept to current union) not-bitfield member, must be very careful!
+        if ( !p->is_bitfield()
+          && bf_collected_size != 0
+          && bf_collected_size < bf_typesize*8
+          && (p+1) != end
+          && p->offset == (p+1)->offset
+          && (p+1)->is_bitfield()
+          && bf_collected_size <= (p+1)->bit_offset
+          && (p+1)->type.get_size() == bf_typesize )
+        {
+          ++p;
         }
         while ( p != end
              && p->is_bitfield()
@@ -2359,7 +2406,6 @@ bool til_builder_t::retrieve_type(
 
   // some types can be defined multiple times. check if the name is already defined
   bool defined_correctly = false;
-  bool defined_wrongly = false;
   type_t tif_mod = 0;
   if ( !ord_set )
     ord = get_type_ordinal(ti, ns.c_str());
@@ -2368,9 +2414,7 @@ bool til_builder_t::retrieve_type(
     tinfo_t tif;
     tif.create_typedef(ti, ord);
     tif_mod = get_sym_modifiers(sym);
-    if ( tif.get_realtype() == BT_UNK )
-      defined_wrongly = true;
-    else
+    if ( tif.get_realtype() != BT_UNK || !tif.is_forward_decl() )
       defined_correctly = true;
   }
   if ( !defined_correctly )
@@ -2432,9 +2476,7 @@ bool til_builder_t::retrieve_type(
       if ( !reuse_anon_type )
       {
         ord = end_creation(ns);
-        int ntf_flags = NTF_NOBASE|NTF_FIXNAME;
-        if ( defined_wrongly )
-          ntf_flags |= NTF_REPLACE;
+        int ntf_flags = NTF_NOBASE|NTF_FIXNAME|NTF_REPLACE;
         tinfo_t tif;
         tinfo_code_t code = tif.deserialize(ti, &type, &fields)
                           ? tif.set_numbered_type(ti, ord, ntf_flags, ns.empty() ? nullptr : ns.c_str())
