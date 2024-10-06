@@ -762,16 +762,35 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 							{
 								for (size_t i = 0; i < cache_paths.size(); i++)
 								{
-									LPCSTR srv = srvs[i].c_str();
+									qstring srv = srvs[i];
+									size_t pos = srv.find("//");
+									if (pos != qstring::npos)
+									{
+										pos = srv.find('/', pos + 2);
+									}
+									else
+									{
+										pos = srv.find('/');
+									}
+									qstring srv_path;
+									if (pos != qstring::npos)
+									{
+										srv_path = &srv[pos + 1];
+										if (srv_path.last() != '/')
+										{
+											srv_path.append('/');
+										}
+										srv.resize(pos);
+									}
 									HANDLE hsite, hfile;
-									BOOL bResult = httpOpenFileHandle(srv, path.c_str(), 0, &hsite, &hfile);
+									BOOL bResult = httpOpenFileHandle(srv.c_str(), (srv_path + path).c_str(), 0, &hsite, &hfile);
 									if (!bResult)
 									{
 										//尝试查找压缩格式的PDB文件(Mozilla服务器只提供了压缩格式，目前版本的IDA的PDB插件并不支持)
 										qstring path_Compressed;//CompressedFileName
 										path_Compressed = path.substr(0, path.length() - 1);
 										path_Compressed.append('_');
-										BOOL bResult_Compressed = httpOpenFileHandle(srv, path_Compressed.c_str(), 0, &hsite, &hfile);
+										BOOL bResult_Compressed = httpOpenFileHandle(srv.c_str(), (srv_path + path_Compressed).c_str(), 0, &hsite, &hfile);
 										if (bResult_Compressed)
 										{
 											//由于需要处理CAB,LZExpand,ZIP的解压，所以目前我们暂时不处理，UncompressFile
@@ -798,11 +817,11 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 													{
 														ATLTRACE("FIND PDB IN SERVER: %s\n", srv);
 														qstring url(srv);
-														if (url[url.length() - 1] != '/')
+														if (url.last() != '/')
 														{
 															url.append('/');
 														}
-														url.append(path);
+														url.append(srv_path + path);
 
 														char szRelPath[MAX_PATH];
 														szRelPath[0] = 0;
