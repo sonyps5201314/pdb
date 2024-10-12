@@ -1199,12 +1199,12 @@ HRESULT pdb_session_t::check_and_load_pdb(
 									  uint64 nFileSize = qfilesize_utf8(strPdbPath_Full.c_str());
 									  qstring strFileContext = GetFileContext(strPdbPath_Full.c_str(), nFileSize);
 									  MD5_FromData((uchar*)strFileContext.c_str(), nFileSize, md5Pdb_Old_for_Vs2015);
-									  strArgs.sprnt("/STATUS %s", strPdbPath_Full.c_str());
+									  strArgs.sprnt("/STATUS \"%s\"", strPdbPath_Full.c_str());
 								  }
 							  }
 							  else
 							  {
-								  strArgs.sprnt("/STATUS /OUT:%s %s", strPdbPath_Full.c_str(), strPdbPath.c_str());
+								  strArgs.sprnt("/STATUS /OUT:\"%s\" \"%s\"", strPdbPath_Full.c_str(), strPdbPath.c_str());
 							  }
 							  if (!strArgs.empty())
 							  {
