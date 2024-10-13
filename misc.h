@@ -3,7 +3,11 @@
 #include <fpro.h>
 #include <md5.h>
 
-#define ASSERT(x) QASSERT(__LINE__, x)
+#ifdef _DEBUG
+#define ASSERT(expr) QASSERT(__LINE__, expr)
+#else
+#define ASSERT(expr) ((void)0)
+#endif
 
 inline qwstring utf8_utf16(const char * in)
 {

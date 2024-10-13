@@ -748,11 +748,6 @@ void try_download_pdb_from_sym_server_by_idm_when_not_exist(clsid_t& guid, uint3
 										}
 									}
 								}
-								else
-								{
-									ASSERT(FALSE);
-									break;
-								}
 
 								// Get next token: 
 								token = qstrtok(nullptr, ";", &next_token);
