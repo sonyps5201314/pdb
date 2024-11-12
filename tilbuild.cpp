@@ -2565,9 +2565,21 @@ HRESULT til_builder_t::handle_symbol(pdb_sym_t &sym)
       }
       return S_OK;
     // new tags for msdia140
+    case SymTagCallSite:
+    case SymTagInlineSite:
+    case SymTagBaseInterface:
+    case SymTagVectorType:
+    case SymTagMatrixType:
+    case SymTagHLSLType:
+    case SymTagCaller:
+    case SymTagCallee:
+    case SymTagExport:
+    case SymTagHeapAllocationSite:
     case SymTagCoffGroup:
+    case SymTagInlinee:
       return S_OK;
     default:
+      ASSERT(tag < SymTagCallSite);
       break;
   }
 
