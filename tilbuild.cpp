@@ -503,7 +503,7 @@ bool til_builder_t::is_frame_reg(int reg) const
 {
   if (pdb_access->get_dia_version() >= 1400 && is_intel386(pdb_access->get_machine_type()))
   {
-    return reg == CV_ALLREG_VFRAME;
+    return reg == CV_ALLREG_VFRAME || reg == CV_REG_EBP;
   }
   return reg == get_frame_reg(pdb_access->get_machine_type());
 }
