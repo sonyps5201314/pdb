@@ -14,7 +14,7 @@ enum cvt_code_t
 // the 'offset' field.
 struct pdb_udm_t : public udm_t
 {
-  uint32 bit_offset;    ///< member offset in bits from start of bitfield group
+  uint32 bit_offset = 0;    ///< member offset in bits from start of bitfield group
 };
 DECLARE_TYPE_AS_MOVABLE(pdb_udm_t);
 typedef qvector<pdb_udm_t> pdbudtmembervec_t; ///< vector of pdb udt member objects
@@ -114,11 +114,12 @@ public:
 
   bool get_symbol_type(tpinfo_t *out, pdb_sym_t &sym, uint32 *p_ord=nullptr);
   bool retrieve_type(tpinfo_t *out, pdb_sym_t &sym, pdb_sym_t *parent, uint32 *p_ord=nullptr);
-  bool retrieve_arguments(
+  callcnv_t retrieve_arguments(
         pdb_sym_t &sym,
         func_type_data_t &fi,
-        pdb_sym_t *funcSym);
-  cm_t convert_cc(DWORD cc0) const;
+        pdb_sym_t *funcSym,
+        callcnv_t cc);
+  callcnv_t convert_cc(DWORD cc0) const;
   bool get_variant_string_value(qstring *out, pdb_sym_t &sym) const;
   uint32 get_variant_long_value(pdb_sym_t &sym) const;
   uint32 allocate_and_assign_ordinal(const char *name) const;

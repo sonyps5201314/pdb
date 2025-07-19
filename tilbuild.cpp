@@ -160,11 +160,8 @@ bool til_builder_t::fix_ctor_to_return_ptr(func_type_data_t *fti, pdb_sym_t *par
   if ( inf_get_app_bitness() != 32 || parent == nullptr )
     return false;
 
-  qstring funcname;
-  parent->get_name(&funcname);
-
   // detect constructor
-  if ( fti->empty() || fti->cc != CM_CC_THISCALL || !fti->rettype.is_void() )
+  if ( fti->empty() || !fti->rettype.is_void() )
     return false;
   const auto &arg0 = fti->at(0);
   if ( !arg0.type.is_ptr() )
@@ -173,6 +170,9 @@ bool til_builder_t::fix_ctor_to_return_ptr(func_type_data_t *fti, pdb_sym_t *par
   qstring class_name;
   if ( !class_type.get_type_name(&class_name) )
     return false;
+
+  qstring funcname;
+  parent->get_name(&funcname);
   qstring ctor_name;
   ctor_name.sprnt("%s::%s", class_name.c_str(), class_name.c_str());
   if ( ctor_name != funcname )
@@ -219,7 +219,7 @@ cvt_code_t til_builder_t::convert_basetype(
   {
     case btNoType:
       out->is_notype = true;
-      // Fallthrough.
+      [[fallthrough]];
     default:
     case 0x12c304:                      // "impdir_entry" (guessed)
     case btBCD:
@@ -319,10 +319,11 @@ MAKE_INT:
 }
 
 //----------------------------------------------------------------------
-bool til_builder_t::retrieve_arguments(
+callcnv_t til_builder_t::retrieve_arguments(
         pdb_sym_t &_sym,
         func_type_data_t &fi,
-        pdb_sym_t *funcSym)
+        pdb_sym_t *funcSym,
+        callcnv_t cc)
 {
   struct type_name_collector_t : public pdb_access_t::children_visitor_t
   {
@@ -375,15 +376,14 @@ bool til_builder_t::retrieve_arguments(
         {
           if ( is_intel386(pdb_access->get_machine_type()) )
           {
-            if ( (fi.cc == CM_CC_FASTCALL
-               || fi.cc == CM_CC_SWIFT) // FIXME
+            if ( (cc == CM_CC_FASTCALL || cc == CM_CC_SWIFT) // FIXME
               && cur_argloc.regoff() == 0
               && (cur_argloc.reg1() == R_cx && i == 0
                || cur_argloc.reg1() == R_dx && i == 1) )
             {
               // ignore ecx and edx for fastcall
             }
-            else if ( fi.cc == CM_CC_THISCALL
+            else if ( cc == CM_CC_THISCALL
                    && cur_argloc.regoff() == 0
                    && cur_argloc.reg1() == R_cx && i == 0 )
             {
@@ -403,15 +403,14 @@ bool til_builder_t::retrieve_arguments(
       // we have some register params; need to convert function to custom cc
       CASSERT(is_purging_cc(CM_CC_THISCALL));
       CASSERT(is_purging_cc(CM_CC_FASTCALL));
-      fi.cc = is_purging_cc(fi.cc) ? CM_CC_SPECIALP : CM_CC_SPECIAL;
+      cc = is_purging_cc(cc) ? CM_CC_SPECIALP : CM_CC_SPECIAL;
     }
-    return true;
   }
-  return false;
+  return cc;
 }
 
 //----------------------------------------------------------------------
-cm_t til_builder_t::convert_cc(DWORD cc0) const
+callcnv_t til_builder_t::convert_cc(DWORD cc0) const
 {
   switch ( cc0 )
   {
@@ -1460,6 +1459,7 @@ static void fill_vft_empty_splots(udt_type_data_t *udt)
 //----------------------------------------------------------------------
 void til_builder_t::create_vftables()
 {
+  int counter = 0;
   while ( !vftmap.empty() )
   {
     bool changed = false;
@@ -1513,8 +1513,12 @@ void til_builder_t::create_vftables()
       {
         ++p;
       }
+
+      ++counter;
+      if ( (counter % 1000 == 0) && user_cancelled() )
+        break;
     }
-    if ( !changed )
+    if ( !changed || user_cancelled() )
       break;
   }
 
@@ -1893,13 +1897,13 @@ FAILED_ARRAY:
           break;
         }
         DWORD cc0;
-        fi.cc = CM_CC_UNKNOWN;
+        callcnv_t cc = CM_CC_UNKNOWN;
         if ( sym.get_callingConvention(&cc0) == S_OK )
-          fi.cc = convert_cc(cc0);
+          cc = convert_cc(cc0);
 
-        if ( get_cc(fi.cc) != CM_CC_VOIDARG )
+        if ( cc != CM_CC_VOIDARG )
         {
-          retrieve_arguments(sym, fi, parent);
+          cc = retrieve_arguments(sym, fi, parent, cc);
           // if arg has unknown/invalid argument => convert to ellipsis
           for ( func_type_data_t::iterator i = fi.begin(); i != fi.end(); i++ )
           {
@@ -1911,9 +1915,8 @@ FAILED_ARRAY:
               // (as opposed to 'foo(void)'), and which might not have a cdecl
               // calling convention. E.g., pc_win32_appcall.pe's 'FARPROC':
               // "int (FAR WINAPI * FARPROC) ()", which is a stdcall.
-              cm_t cc = get_cc(fi.cc);
               if ( cc == CM_CC_CDECL || inf_is_64bit() && cc == CM_CC_FASTCALL )
-                fi.cc = CM_CC_ELLIPSIS;
+                cc = CM_CC_ELLIPSIS;
               // remove the ellipsis and any trailing arguments
               fi.erase(i, fi.end());
               break;
@@ -1961,9 +1964,10 @@ FAILED_ARRAY:
             }
             if ( add_this )
               fi.insert(fi.begin(), thisarg);
-            fix_ctor_to_return_ptr(&fi, parent);
+            if ( cc == CM_CC_THISCALL )
+              fix_ctor_to_return_ptr(&fi, parent);
           }
-          if ( is_user_cc(fi.cc) )
+          if ( is_user_cc(cc) )
           {
             // specify argloc for the return value
             size_t retsize = fi.rettype.get_size();
@@ -1991,8 +1995,9 @@ FAILED_ARRAY:
               if ( fi[i].argloc.is_badloc() )
                 fi.erase(fi.begin() + i);
           }
-          out->type.create_func(fi);
         }
+        fi.set_cc(cc);
+        out->type.create_func(fi);
       }
       break;
 
@@ -2220,19 +2225,36 @@ cvt_code_t til_builder_t::handle_overlapping_members(pdb_udt_type_data_t *udt) c
         for ( pdb_udt_type_data_t::iterator q=first; q != p; ++q )
         {
           if ( q->is_bitfield() )
-            bf_collected_size = q->bit_offset + q->size;
+            bf_collected_size += q->bit_offset + q->size;
         }
-        // in case of byte boundary at gap for the bitfield member (Padding)
-        // there may be gap-member (Reserved) for the previous member (Variant):
+        // Fields are sorted by offsets. If union fields are structures,
+        // it may lead to puzzling situations like this:
         //  4. offset 0x80 size 0x8  'Variant' type      'unsigned __int8' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
         //  5. offset 0x80 size 0x8  'Padding' type      'unsigned __int32 : 8' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
         //  6. offset 0x88 size 0x18 'Reserved' type     'unsigned __int8[3]' effalign 0 tafld_bits 0x0 fda 0 bit_offset 0
         //  7. offset 0x88 size 0x1  'ChangeTimeUpgrade' type 'unsigned __int32 : 1' effalign 0 tafld_bits 0x0 fda 0 bit_offset 8
         //  8. offset 0x89 size 0x17 'ReservedFlags'     type 'unsigned __int32 : 23' effalign 0 tafld_bits 0x0 fda 0 bit_offset 9
-        //  Note:
-        //  1. suppose that gap-member may be only one
-        //  2. there is a need to skip (accept to current union) not-bitfield member, must be very careful!
-        if ( !p->is_bitfield()
+        // Here the "Padding' and 'Reserved' fields belong to different sub-structures:
+        //   struct $2BE9FDB777E807E44C324ABC6EC300EB
+        //   {
+        //       unsigned __int8 Variant;
+        //       unsigned __int8 Reserved[3];
+        //   };
+        //
+        //   struct $A201E2401D2F1CB09DF5150550A30288
+        //   {
+        //       unsigned __int32 Padding : 8;
+        //       unsigned __int32 ChangeTimeUpgrade : 1;
+        //       unsigned __int32 ReservedFlags : 23;
+        //   };
+        //
+        //   union $6092742E3C4906EBD927CAE4613FA161
+        //   {
+        //       $2BE9FDB777E807E44C324ABC6EC300EB __s0;
+        //       $A201E2401D2F1CB09DF5150550A30288 __s1;
+        //   };
+        if ( p != end
+          && !p->is_bitfield()
           && bf_collected_size != 0
           && bf_collected_size < bf_typesize*8
           && (p+1) != end
@@ -2612,7 +2634,6 @@ HRESULT til_builder_t::handle_symbol(pdb_sym_t &sym)
   return S_OK;
 }
 
-
 //----------------------------------------------------------------------
 // Each time we encounter a toplevel type/func/whatever, we want to make
 // sure the UI has had a chance to refresh itself.
@@ -2620,7 +2641,8 @@ struct toplevel_children_visitor_t : public pdb_access_t::children_visitor_t
 {
   virtual HRESULT visit_child(pdb_sym_t &sym) override
   {
-    user_cancelled();
+    if ( user_cancelled() )
+      return E_ABORT;
     return do_visit_child(sym);
   }
 
@@ -2714,9 +2736,14 @@ HRESULT til_builder_t::build(pdb_sym_t &global_sym)
 {
   HRESULT hr = before_iterating(global_sym);
   if ( hr == S_OK && (pdb_access->pdbargs.flags & PDBFLG_LOAD_TYPES) != 0 )
+  {
+    show_wait_box("Handling types ...");
     hr = handle_types(global_sym);
+    hide_wait_box();
+  }
   if ( (pdb_access->pdbargs.flags & PDBFLG_LOAD_NAMES) != 0 )
   {
+    show_wait_box("Handling symbols ...");
     if ( hr == S_OK )
       hr = handle_symbols(global_sym);
     if ( hr == S_OK )
@@ -2732,10 +2759,16 @@ HRESULT til_builder_t::build(pdb_sym_t &global_sym)
     // Therefore, handle_publics() must be called *after* handle_globals().
     if ( hr == S_OK )
       hr = handle_publics(global_sym);
+    hide_wait_box();
   }
   if ( hr == S_OK )
   {
+    show_wait_box("Creating virtual function tables ...");
     create_vftables();
+    hide_wait_box();
+    if ( user_cancelled() )
+      return E_ABORT;
+
     hr = after_iterating(global_sym);
   }
   return hr;

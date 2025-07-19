@@ -1097,26 +1097,24 @@ static bool get_details_from_pe(pdbargs_t *args)
   args->input_path = get_input_path();
   args->loaded_base = penode.altval(PE_ALT_IMAGEBASE);
 
-  static const char formstr[] =
+  static const char form[] =
     "BUTTON YES ~Y~es\n"
     "BUTTON NO ~N~o\n"
     "BUTTON CANCEL NONE\n"
     "Load PDB file\n"
     "The input file was linked with debug information stored here:\n"
-    "\"%s\"\n"
+    "%q\n"
     "Do you want to look for this file at the specified path\n"
     "and the Microsoft Symbol Server?\n"
     "<#Load types#Load ~t~ypes:C10>\n"
     "<#Load names#Load n~a~mes:C20>>\n";
 
-  qstring form;
-  form.sprnt(formstr, args->pdb_path.c_str());
-
   sval_t load_options = 0;
   setflag(load_options, LOAD_TYPES, (args->flags & PDBFLG_LOAD_TYPES) != 0);
   setflag(load_options, LOAD_NAMES, (args->flags & PDBFLG_LOAD_NAMES) != 0);
 
-  int res = ask_form(form.begin(), &load_options);
+  qstring *pdb_path = &args->pdb_path;
+  int res = ask_form(form, pdb_path, &load_options);
   if ( res != 1 )
     return false;
 
@@ -1236,12 +1234,13 @@ LOAD_PDB:
   {
     // Now all information is loaded into the database (except names)
     // We are ready to use names.
+    show_wait_box("Loading names ...");
     int counter = 0;
     for ( namelist_t::iterator p=namelist.begin(); p != namelist.end(); ++p )
     {
       ea_t ea = p->first;
       // do not override name for COFF file
-      if ( pdbargs.is_pdbfile() || !has_name(get_flags(ea)) )
+      if ( pdbargs.is_pdbfile() || !has_name(get_flags32(ea)) )
       {
         if ( pdbargs.is_dbg_module() )
           counter += set_debug_name(ea, p->second.c_str());
@@ -1249,9 +1248,13 @@ LOAD_PDB:
           counter += force_name(ea, p->second.c_str());
       }
       // Every now & then, make sure the UI has had a chance to refresh.
-      if ( (counter % 10) == 0 )
-        user_cancelled();
+      if ( (counter % 10 == 0) && user_cancelled() )
+      {
+        ok = false;
+        break;
+      }
     }
+    hide_wait_box();
     namelist.clear();
     msg("PDB: total %d symbol%s loaded for \"%s\"\n",
         counter,
