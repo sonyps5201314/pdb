@@ -346,18 +346,6 @@ public:
 };
 
 //---------------------------------------------------------------------------
-template<class T> void print_generic(T t)
-{
-  IDiaPropertyStorage *pPropertyStorage;
-  HRESULT hr = t->QueryInterface(__uuidof(IDiaPropertyStorage), (void **)&pPropertyStorage);
-  if ( hr == S_OK )
-  {
-    print_property_storage(pPropertyStorage);
-    pPropertyStorage->Release();
-  }
-}
-
-//---------------------------------------------------------------------------
 static const char *const g_pdb_errors[] =
 {
   "Operation successful (E_PDB_OK)",
@@ -1446,27 +1434,25 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
     goto fail;
 
   // First try to open PDB file if it was specified.
-  const qstring &pdb_path = pdbargs.pdb_path;
-  if ( !pdb_path.empty()
-    && check_for_odd_paths(pdb_path.c_str())
-    && qfileexist(pdb_path.c_str()) )
+  if ( !pdbargs.pdb_path.empty()
+    && check_for_odd_paths(pdbargs.pdb_path.c_str())
+    && qfileexist(pdbargs.pdb_path.c_str()) )
   {
     qwstring wpdb_path;
-    utf8_utf16(&wpdb_path, pdb_path.c_str());
+    utf8_utf16(&wpdb_path, pdbargs.pdb_path.c_str());
     bool force_load = (pdbargs.flags & (PDBFLG_LOAD_TYPES|PDBFLG_EFD)) != 0
                    && (pdbargs.flags & PDBFLG_LOAD_NAMES) == 0;
     hr = check_and_load_pdb(wpdb_path.c_str(), pdbargs.pdb_sign, force_load, pdbargs);
     if ( hr == E_PDB_INVALID_SIG || hr == E_PDB_INVALID_AGE ) // Mismatching PDB
       goto fail;
     pdb_loaded = (hr == S_OK);
-    used_fname = pdb_path; // TODO is this needed?
+    used_fname = pdbargs.pdb_path; // TODO is this needed?
   }
 
   // Failed? Try to load input_path as EXE if it was specified.
-  const qstring &input_path = pdbargs.input_path;
-  if ( !pdb_loaded && !input_path.empty() )
+  if ( !pdb_loaded && !pdbargs.input_path.empty() )
   {
-    qstring path = input_path;
+    qstring path = pdbargs.input_path;
     if ( !qfileexist(path.c_str()) )
     {
       // If the input path came from a remote system, it is unlikely to be
@@ -1477,7 +1463,7 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
       // Since we cannot rely on remote paths, we simply use the current dir
       char buf[QMAXPATH];
       qgetcwd(buf, sizeof(buf));
-      path.sprnt("%s\\%s", buf, qbasename(input_path.c_str()));
+      path.sprnt("%s\\%s", buf, qbasename(pdbargs.input_path.c_str()));
       msg("PDB: \"%s\": not found, trying \"%s\"\n", path.c_str(), buf);
     }
     if ( !check_for_odd_paths(path.c_str()) )
@@ -1516,11 +1502,10 @@ HRESULT pdb_session_t::open_session(pdbargs_t &pdbargs)
 
   // Set load address
   // TODO check if load_address should be set when loading PDB works directly.
-  ea_t load_address = pdbargs.loaded_base;
-  if ( load_address != BADADDR )
+  if ( pdbargs.loaded_base != BADADDR )
   {
-    msg("PDB: using load address %a\n", load_address);
-    pSession->put_loadAddress(load_address);
+    msg("PDB: using load address %a\n", pdbargs.loaded_base);
+    pSession->put_loadAddress(pdbargs.loaded_base);
   }
 
   // Retrieve a reference to the global scope
