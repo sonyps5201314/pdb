@@ -54,6 +54,5 @@
       <Filter>pdb</Filter>
     </None>
     <None Include="pdb.cfg" />
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>
