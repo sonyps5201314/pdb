@@ -216,7 +216,7 @@ static bool ignore_name(const char *name)
     const char *p = &name[5];
     if ( *p != '\0' )
     {
-      for ( ; *p != '\0' && isdigit(*p); ++p )
+      for ( ; *p != '\0' && qisdigit(*p); ++p )
         ;
       if ( *p == '\0' )
         return true;
@@ -227,16 +227,16 @@ static bool ignore_name(const char *name)
   if ( strneq(name, "_lc", 3) )
   {
     const char *p = &name[3];
-    if ( isdigit(p[0])
-      && isdigit(p[1])
-      && isdigit(p[2])
+    if ( qisdigit(p[0])
+      && qisdigit(p[1])
+      && qisdigit(p[2])
       && p[3] == '_'
-      && isdigit(p[4])
-      && isdigit(p[5])
-      && isdigit(p[6])
-      && isdigit(p[7])
-      && isdigit(p[8])
-      && isdigit(p[9])
+      && qisdigit(p[4])
+      && qisdigit(p[5])
+      && qisdigit(p[6])
+      && qisdigit(p[7])
+      && qisdigit(p[8])
+      && qisdigit(p[9])
       && p[10] == '_' )
     {
       return true;
