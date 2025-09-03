@@ -360,9 +360,9 @@ inline void pdberr_suggest_vs_runtime(HRESULT hr)
   {
     msg("<< It appears that MS DIA SDK is not installed.\n");
 #ifdef __X86__
-    msg("Please try installing \"Microsoft Visual C++ 2008 Redistributable Package / x86\" >>\n");
+    msg("Please try installing a recent \"Microsoft Visual C++ Redistributable Package / x86\" >>\n");
 #else
-    msg("Please try installing \"Microsoft Visual C++ 2008 Redistributable Package / x64\" >>\n");
+    msg("Please try installing a recent \"Microsoft Visual C++ Redistributable Package / x64\" >>\n");
 #endif
   }
 }
@@ -382,15 +382,25 @@ const char *pdberr(int code)
 }
 
 //----------------------------------------------------------------------
-class DECLSPEC_UUID("4C41678E-887B-4365-A09E-925D28DB33C2") DiaSource90;
+class DECLSPEC_UUID("e6756135-1e65-4d17-8576-610761398c3c") DiaSource140;
+class DECLSPEC_UUID("3bfcea48-620f-4b6b-81f7-b9af75454c7d") DiaSource120;
+class DECLSPEC_UUID("761d3bcd-1304-41d5-94e8-eac54e4ac172") DiaSource110;
+class DECLSPEC_UUID("b86ae24d-bf2f-4ac9-b5a2-34b14e4ce11d") DiaSource100;
+class DECLSPEC_UUID("4c41678e-887b-4365-a09e-925d28db33c2") DiaSource90;
 class DECLSPEC_UUID("1fbd5ec4-b8e4-4d94-9efe-7ccaf9132c98") DiaSource80;
 class DECLSPEC_UUID("31495af6-0897-4f1e-8dac-1447f10174a1") DiaSource71;
+
+
+static const GUID *const g_d140 = &__uuidof(DiaSource140);  // msdia140.dll
+static const GUID *const g_d120 = &__uuidof(DiaSource120);  // msdia120.dll
+static const GUID *const g_d110 = &__uuidof(DiaSource110);  // msdia110.dll
+static const GUID *const g_d100 = &__uuidof(DiaSource100);  // msdia100.dll
 static const GUID *const g_d90 = &__uuidof(DiaSource90);  // msdia90.dll
 static const GUID *const g_d80 = &__uuidof(DiaSource80);  // msdia80.dll
 static const GUID *const g_d71 = &__uuidof(DiaSource71);  // msdia71.dll
-static const GUID *const g_msdiav[] = { g_d90, g_d80, g_d71 };
-static const int         g_diaver[] = { 900,   800,   710 };
-static const char *const g_diadlls[] = { "msdia90.dll", "msdia80.dll", "msdia71.dll" };
+static const GUID *const g_msdiav[] = { g_d140, g_d120, g_d110, g_d100, g_d90, g_d80, g_d71 };
+static const int         g_diaver[] = {   1400,   1200,   1100,   1000,   900,   800,   710 };
+static const char *const g_diadlls[] = { "msdia140.dll", "msdia120.dll", "msdia110.dll", "msdia100.dll", "msdia90.dll", "msdia80.dll", "msdia71.dll" };
 
 //----------------------------------------------------------------------
 HRESULT __stdcall CoCreateInstanceNoReg(
@@ -459,6 +469,9 @@ static DWORD get_machine_type(DWORD dwMachType)
       break;
     case PECPU_ARMV7:
       machine = CV_CFL_ARM7;
+      break;
+    case PECPU_ARM64:
+      machine = CV_CFL_ARM64;
       break;
     case PECPU_PPC:
       machine = CV_CFL_PPC620;

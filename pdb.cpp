@@ -825,7 +825,7 @@ static uint32 get_machine_from_idb(const processor_t &ph)
   switch ( ph.id )
   {
     case PLFM_ARM:
-      mt = CV_CFL_ARM6;
+      mt = inf_is_64bit() ? CV_CFL_ARM64 : CV_CFL_ARM6;
       break;
     case PLFM_MIPS:
       mt = CV_CFL_MIPSR4000;

@@ -2011,50 +2011,55 @@ FAILED_ARRAY:
         {
           const til_builder_t *tb;
           enum_type_data_t ei;
-          const type_t *idatype;
           HRESULT visit_child(pdb_sym_t &child) override
           {
             edm_t &em = ei.push_back();
             child.get_name(&em.name);
             em.value = tb->get_variant_long_value(child);
-            if ( em.name.empty()
-              || get_named_type(tb->ti, em.name.c_str(), NTF_SYMM, &idatype) == 1 )
+            if ( em.name.empty() )
             {
               return E_FAIL;
             }
             return S_OK;
           }
           name_value_collector_t(const til_builder_t *_tb)
-            : tb(_tb), idatype(nullptr) {}
+            : tb(_tb) {}
         };
         name_value_collector_t nvc(this);
         if ( size != 0 && size <= 64 )
           nvc.ei.set_nbytes(size);
         HRESULT hr = pdb_access->iterate_children(sym, SymTagNull, nvc);
         if ( FAILED(hr) )
-        { // symbol already exists or
-          // corrupted name or
+        { // corrupted name or
           // iterate_children failed to read any child
           if ( nvc.ei.empty() || nvc.ei.back().name.empty() )
           {
             code = cvt_failed;
             break;
           }
-          // just reuse the existing enum
-          if ( !out->type.deserialize(ti, &nvc.idatype) ) // this is not quite correct
-            INTERR(30407);
-          qstring n1;
-          if ( out->type.get_type_name(&n1) )
-          {
-            qstring nm;
-            get_symbol_name(sym, nm);
-            if ( nm == n1 )
-              code = cvt_typedef;       // avoid circular dependencies
-          }
         }
         else
         {
-          out->type.create_enum(nvc.ei);
+          // Check if the type exists already. If so, create a typedef.
+          qstring nm;
+          const type_t *idatype = nullptr;
+          get_symbol_name(sym, nm);
+          if ( get_named_type(ti, nm.c_str(), NTF_TYPE, &idatype) == 1 )
+          {
+            // just reuse the existing enum
+            if ( !out->type.deserialize(ti, &idatype) ) // this is not quite correct
+              INTERR(30407);
+            qstring n1;
+            if ( out->type.get_type_name(&n1) )
+            {
+              if ( nm == n1 )
+                code = cvt_typedef;       // avoid circular dependencies
+            }
+          }
+          else
+          {
+            out->type.create_enum(nvc.ei);
+          }
         }
       }
       break;

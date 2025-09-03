@@ -35,7 +35,14 @@ inline bool is_arm(uint32_t machine_type)
       || machine_type == CV_CFL_ARMNT
       || machine_type == CV_CFL_ARM_XMAC
       || machine_type == CV_CFL_ARM_WMMX
-      || machine_type == CV_CFL_THUMB;
+      || machine_type == CV_CFL_THUMB
+      || machine_type == CV_CFL_ARMNT;
+}
+
+//----------------------------------------------------------------------------
+inline bool is_arm64(uint32_t machine_type)
+{
+  return machine_type == CV_CFL_ARM64;
 }
 
 //----------------------------------------------------------------------------
@@ -44,6 +51,7 @@ inline int get_stack_reg(uint32_t machine_type)
   return is_intel386(machine_type) ? CV_REG_ESP
        : is_intel64(machine_type)  ? CV_AMD64_RSP
        : is_arm(machine_type)      ? CV_ARM_SP
+       : is_arm64(machine_type)    ? CV_ARM64_SP
        :                             CV_REG_NONE;
 }
 
@@ -53,5 +61,6 @@ inline int get_frame_reg(uint32_t machine_type)
   return is_intel386(machine_type) ? CV_REG_EBP
        : is_intel64(machine_type)  ? CV_AMD64_RBP
        : is_arm(machine_type)      ? CV_ARM_R11
+       : is_arm64(machine_type)    ? CV_ARM64_FP
        :                             CV_REG_NONE;
 }

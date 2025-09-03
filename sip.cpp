@@ -783,7 +783,7 @@ static src_item_kind_t find_srcitem_kind(pdb_sym_t *sym)
             case LocIsRegRel:
               DWORD dwReg;
               if ( sym->get_registerId(&dwReg) == S_OK
-                && (dwReg == CV_REG_EBP || dwReg == CV_AMD64_RSP) )
+                && (dwReg == CV_REG_EBP || dwReg == CV_AMD64_RSP || dwReg == CV_ARM64_SP) )
               {
                 kind = SRCIT_LOCVAR;
               }
