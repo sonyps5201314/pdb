@@ -411,7 +411,7 @@ static const GUID* const g_msdiav[] = { &__uuidof(DiaSource) };
 static const int         g_diaver[] = { 1400 };
 static const char* const g_diadlls[] = { "msdia140.dll" };
 #else
-class DECLSPEC_UUID("4C41678E-887B-4365-A09E-925D28DB33C2") DiaSource90;
+class DECLSPEC_UUID("4c41678e-887b-4365-a09e-925d28db33c2") DiaSource90;
 class DECLSPEC_UUID("1fbd5ec4-b8e4-4d94-9efe-7ccaf9132c98") DiaSource80;
 class DECLSPEC_UUID("31495af6-0897-4f1e-8dac-1447f10174a1") DiaSource71;
 static const GUID *const g_d90 = &__uuidof(DiaSource90);  // msdia90.dll
@@ -489,6 +489,9 @@ static DWORD get_machine_type(DWORD dwMachType)
       break;
     case PECPU_ARMV7:
       machine = CV_CFL_ARM7;
+      break;
+    case PECPU_ARM64:
+      machine = CV_CFL_ARM64;
       break;
     case PECPU_PPC:
       machine = CV_CFL_PPC620;
